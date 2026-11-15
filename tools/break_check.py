@@ -89,6 +89,18 @@ MUTATIONS: list[tuple[str, str, str, str, list[str]]] = [
      ["-p", "fakeobd", "--test", "server", "non_loopback_bind"]),
     ("M35", "crates/obd-policy/src/audit.rs", "let _ = writeln!(sink, \"{}\", entry.to_json());", "let _ = &sink;",
      ["-p", "obd-policy", "--test", "policy", "audit_sink_receives"]),
+    ("M36", "crates/obd-policy/src/filter.rs", "if let Verdict::Deny(_) = d.verdict {", "if false {",
+     ["-p", "obd-policy", "--test", "filter", "decide_agrees"]),
+    ("M37", "crates/obd-policy/src/filter.rs", "Verdict::Allow => Action::Rewrite(new),", "_ => Action::Rewrite(new),",
+     ["-p", "obd-policy", "--test", "filter", "a_rewriter_is_judged_again"]),
+    ("M38", "crates/obd-policy/src/filter.rs", "Line::Bypass(_) | Line::Malformed => LineAction::Refuse,", "Line::Bypass(_) | Line::Malformed => LineAction::Forward,",
+     ["-p", "obd-policy", "--test", "filter", "lines_are_forwarded"]),
+    ("M39", "crates/fakeobd/src/lib.rs", "while let Some(pos) = self.pending.iter().position(|b| *b == b'\\r') {", "while let Some(pos) = self.pending.iter().position(|b| *b == b'\\n') {",
+     ["-p", "fakeobd", "--test", "pipe", "a_pipe_answers"]),
+    ("M40", "crates/fakeobd/src/lib.rs", "pub fn close(&mut self) {\n        self.tx = None;", "pub fn close(&mut self) {\n        let _ = &self.tx;",
+     ["-p", "fakeobd", "--test", "pipe", "close_is_idempotent"]),
+    ("M41", "crates/serial-bridge/src/lib.rs", 'LineAction::Refuse => self.local("?"),', "LineAction::Refuse => {}",
+     ["--manifest-path", "crates/serial-bridge/Cargo.toml", "a_relay_between"]),
 ]
 
 

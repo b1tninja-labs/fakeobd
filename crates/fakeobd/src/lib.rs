@@ -220,3 +220,70 @@ pub fn verify(t: &Transcript) -> Result<Report, String> {
         .map(Report::strict)
         .map_err(|e| e.to_string())
 }
+
+/// An in-process connection to a fresh simulated bench: no socket, no thread. Write command bytes in,
+/// take reply chunks from the receiver. The shape matches gattmirror's `serial_stream::ByteStream`
+/// (`write`, take-once `receiver`, idempotent `close`); the adapter crate `crates/serial-bridge`
+/// implements that trait over this type.
+pub struct SimPipe {
+    elm: Elm,
+    pending: Vec<u8>,
+    tx: Option<std::sync::mpsc::Sender<Vec<u8>>>,
+    rx: Option<std::sync::mpsc::Receiver<Vec<u8>>>,
+}
+
+/// Writing to a closed pipe.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Closed;
+
+impl SimPipe {
+    pub fn new(sim: &Sim) -> SimPipe {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let elm = sim.build();
+        let banner = elm.banner();
+        if !banner.is_empty() {
+            let _ = tx.send(banner);
+        }
+        SimPipe {
+            elm,
+            pending: Vec::new(),
+            tx: Some(tx),
+            rx: Some(rx),
+        }
+    }
+
+    /// Command bytes in. Each carriage-return-terminated line produces one reply chunk.
+    pub fn write(&mut self, bytes: &[u8]) -> Result<(), Closed> {
+        if self.tx.is_none() {
+            return Err(Closed);
+        }
+        self.pending.extend_from_slice(bytes);
+        while let Some(pos) = self.pending.iter().position(|b| *b == b'\r') {
+            let line: Vec<u8> = self.pending.drain(..=pos).take(pos).collect();
+            let reply = self.elm.handle_line(&line);
+            if !reply.bytes.is_empty() {
+                if let Some(tx) = &self.tx {
+                    let _ = tx.send(reply.bytes);
+                }
+            }
+            if reply.close {
+                self.close();
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    /// The reply stream; can be taken once. It disconnects when the pipe closes.
+    pub fn receiver(&mut self) -> Option<std::sync::mpsc::Receiver<Vec<u8>>> {
+        self.rx.take()
+    }
+
+    pub fn close(&mut self) {
+        self.tx = None;
+    }
+
+    pub fn elm(&self) -> &Elm {
+        &self.elm
+    }
+}

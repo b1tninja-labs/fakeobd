@@ -93,6 +93,17 @@ Test paths are `crate::file::test` (integration tests in `crates/<crate>/tests/`
 | [open] | The app reaches a data screen (VIN detected, live values) against the simulator | [docs/AVD-TRIAL.md](docs/AVD-TRIAL.md) | none: the simulator lacks modules the app addresses |
 | [open] | The same app through `obd-bridge` and a real adapter, and through the policy relay | volt `docs/AVD-OBD-BRIDGE.md` | none: needs hardware and the relay |
 
+## 8. Streams and the relay API
+
+| Status | Obligation | Anchor | Test |
+|---|---|---|---|
+| [ok] | `Filter::decide(request_bytes, Context) -> Action::{Allow, Deny{sid, nrc}, Rewrite}` agrees with `Policy` for all 256 service identifiers, gives the negative response PDU, and feeds every decision to audit sinks with its origin | project design; [docs/architecture.md](docs/architecture.md#reusing-the-policy-in-a-relay) | `obd-policy::filter::decide_agrees_with_the_policy_for_all_256_service_ids` (M36), `::a_deny_carries_the_negative_response`, `::sinks_see_every_decision_with_the_origin` |
+| [ok] | A rewriter's output is judged again, so a rewrite cannot smuggle a refused service (`$27`) past the policy | `docs/SCOPE.md` | `obd-policy::filter::a_rewriter_is_judged_again_and_cannot_smuggle_a_refused_service` (M37) |
+| [ok] | `Filter::decide_line` forwards adapter settings and allowed requests, answers a denied request with `7F <sid> <nrc>`, refuses bypass and malformed lines, and keeps the response-count digit on a rewrite | project design | `obd-policy::filter::lines_are_forwarded_answered_or_refused` (M38), `::a_rewritten_line_keeps_the_response_count_digit` |
+| [ok] | `SimPipe`: the simulator in process, no socket: one reply chunk per line, partial lines wait, take-once receiver, idempotent close, an adapter drop fault closes it | project design | `fakeobd::pipe::a_pipe_answers_without_a_socket_one_chunk_per_line` (M39), `::close_is_idempotent_and_disconnects_the_receiver` (M40), `::an_adapter_drop_fault_closes_the_pipe` |
+| [ok] | `crates/serial-bridge` (separate manifest, path dependency on gattmirror's `serial-stream` at its gm-binary worktree): `SimStream` is a `ByteStream`; `PolicyStream` relays between any two `ByteStream`s and answers refusals itself without forwarding them | gattmirror `serial-stream` (commit 40ed77b) | `serial-bridge::bridge::the_simulator_is_a_byte_stream`, `::a_relay_between_two_streams_refuses_what_the_policy_refuses` (M41); not in CI: the path dependency points at a worktree until serial-stream lands on gattmirror main |
+| [open] | A relay binary in front of a real adapter; local refusals honour the backend's echo and linefeed state | [docs/architecture.md](docs/architecture.md#reusing-the-policy-in-a-relay) | none: hardware; gattmirror's relay binary is the consumer |
+
 ## 7. Registration
 
 | Status | Obligation | Anchor | Test |

@@ -5,7 +5,7 @@ Each row: the code was changed (`tools/break_check.py` holds the exact edit), th
 | Id | File | Result | Tests that failed |
 |---|---|---|---|
 | M01 | `crates/obd-policy/src/policy.rs` | KILLED | default_policy_admits_exactly_the_read_set_over_all_256_service_ids |
-| M02 | `crates/obd-policy/src/policy.rs` | KILLED | security_access_is_refused_under_every_policy_that_can_be_built, allowing_security_access_is_an_error_not_a_silent_no_op |
+| M02 | `crates/obd-policy/src/policy.rs` | KILLED | allowing_security_access_is_an_error_not_a_silent_no_op, security_access_is_refused_under_every_policy_that_can_be_built |
 | M03 | `crates/obd-policy/src/policy.rs` | KILLED | session_control_admits_only_default_and_extended_for_all_256_sub_functions |
 | M04 | `crates/obd-policy/src/policy.rs` | KILLED | deny_beats_allow |
 | M05 | `crates/obd-policy/src/audit.rs` | KILLED | audit_does_not_keep_the_body_of_a_state_changing_request |
@@ -39,3 +39,9 @@ Each row: the code was changed (`tools/break_check.py` holds the exact edit), th
 | M33 | `crates/obd-conform/src/lib.rs` | KILLED | tests::tcp_refuses_a_non_loopback_address_by_default |
 | M34 | `crates/fakeobd/src/lib.rs` | KILLED | a_non_loopback_bind_is_refused_by_default |
 | M35 | `crates/obd-policy/src/audit.rs` | KILLED | audit_sink_receives_one_json_line_per_decision |
+| M36 | `crates/obd-policy/src/filter.rs` | KILLED | decide_agrees_with_the_policy_for_all_256_service_ids |
+| M37 | `crates/obd-policy/src/filter.rs` | KILLED | a_rewriter_is_judged_again_and_cannot_smuggle_a_refused_service |
+| M38 | `crates/obd-policy/src/filter.rs` | KILLED | lines_are_forwarded_answered_or_refused |
+| M39 | `crates/fakeobd/src/lib.rs` | KILLED | a_pipe_answers_without_a_socket_one_chunk_per_line |
+| M40 | `crates/fakeobd/src/lib.rs` | KILLED | close_is_idempotent_and_disconnects_the_receiver |
+| M41 | `crates/serial-bridge/src/lib.rs` | KILLED | a_relay_between_two_streams_refuses_what_the_policy_refuses |

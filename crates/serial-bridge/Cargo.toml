@@ -1,0 +1,22 @@
+# Not a member of the main workspace: it depends on gattmirror's `serial-stream` crate, which is a path
+# dependency outside this repository. Build it on its own: `cargo test --manifest-path crates/serial-bridge/Cargo.toml`.
+# Until serial-stream is on gattmirror's main branch the path points at the worktree where it was written.
+[workspace]
+
+[package]
+name = "serial-bridge"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "fakeobd and obd-policy as gattmirror serial_stream::ByteStream implementations"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+serial-stream = { path = "../../../gattmirror/.claude/worktrees/gm-binary-f7175e/crates/serial-stream" }
+fakeobd = { path = "../fakeobd" }
+obd-policy = { path = "../obd-policy" }
+
+[dev-dependencies]
+elm = { path = "../elm" }

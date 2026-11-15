@@ -10,11 +10,13 @@
 //! limits in the repository's `docs/SCOPE.md`.
 
 mod audit;
+mod filter;
 mod line;
 mod policy;
 mod service;
 
 pub use audit::{AuditEntry, AuditLog, PLAIN_KEEP, SENSITIVE_KEEP};
+pub use filter::{Action, AuditSink, Context, Filter, LineAction, Rewriter};
 pub use line::{classify_line, Line};
 pub use policy::{
     Decision, Policy, PolicyError, Reason, Rule, Subs, Verdict, HARD_DENY,

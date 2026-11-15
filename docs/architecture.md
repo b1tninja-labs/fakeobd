@@ -75,5 +75,28 @@ between an app and a real adapter would:
 4. record every decision with `AuditLog::record`.
 
 What the relay cannot see from a line alone: a multi-line request built from adapter state (`ATCAF0` with
-raw frames, which `Bypass` refuses), and requests a bus-side tool sends by another route. This is not built
-(ROADMAP: relay).
+raw frames, which `Bypass` refuses), and requests a bus-side tool sends by another route. 
+
+### The API, and streams
+
+```rust
+let mut f = Filter::new(Policy::read_only()).with_sink(Box::new(my_sink));   // AuditSink
+match f.decide(&pdu, &Context::new("7E0")) {                                  // application-layer bytes
+    Action::Allow => forward(pdu),
+    Action::Deny { .. } => reply(action.negative_response()),                 // 7F <sid> <nrc>
+    Action::Rewrite(new) => forward(new),                                     // judged again
+}
+f.decide_line("22 41 AD", &ctx)  // ELM text: Forward | Respond(hex) | Refuse | Rewrite(line)
+```
+
+For gattmirror's `serial_stream::ByteStream` contract: `fakeobd::SimPipe` is the simulator in process, and
+`crates/serial-bridge` (its own manifest, because it has a path dependency outside this repository)
+implements `ByteStream` for it (`SimStream`) and provides `PolicyStream<S: ByteStream>`, a relay that sits
+between any frontend stream and any backend stream. Its local refusals are not echoed and ignore the
+backend's linefeed setting (fine for apps that send `ATE0` first).
+
+### Golden transcripts against real hardware
+
+The capture and compare workflow, the format and the gap mechanism are in
+[transcript-format.md](transcript-format.md); `capture` works against any ELM327-over-TCP endpoint, including
+a bridge in front of an OBDLink MX+ or other STN adapter.
