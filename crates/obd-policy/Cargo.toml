@@ -1,0 +1,10 @@
+[package]
+name = "obd-policy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Safety policy for diagnostic requests: refuses state-changing UDS/GMLAN services, audits every decision"
+
+[lints]
+workspace = true
+

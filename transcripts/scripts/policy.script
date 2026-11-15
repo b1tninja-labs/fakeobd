@@ -1,0 +1,27 @@
+# Every state-changing service is refused with a negative response; reads still work afterwards.
+ATZ
+ATE0
+ATL0
+ATSP6
+ATSH7E0
+2241AD
+2701
+2702AAAAAAAAAA
+2ED21B0102
+2F01020300
+3101 5247
+3102 0723
+1101
+1102
+14FFFFFF
+04
+08
+2803 01
+3400 440000 0000
+3601
+37
+8502
+1002
+1081
+A5 01
+2241AD

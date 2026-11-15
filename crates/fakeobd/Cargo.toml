@@ -1,0 +1,19 @@
+[package]
+name = "fakeobd"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Fake vehicle behind an ELM327/STN adapter, served over TCP"
+
+[lints]
+workspace = true
+
+[dependencies]
+elm = { path = "../elm" }
+vehicle = { path = "../vehicle" }
+obd-policy = { path = "../obd-policy" }
+obd-conform = { path = "../obd-conform" }
+
+[[bin]]
+name = "fakeobd"
+path = "src/main.rs"

@@ -1,0 +1,13 @@
+[package]
+name = "vehicle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Simulated vehicle: ECUs on an 11-bit HS-CAN bus, OBD-II and UDS read services, fault injection"
+
+[lints]
+workspace = true
+
+[dependencies]
+isotp = { path = "../isotp" }
+obd-policy = { path = "../obd-policy" }

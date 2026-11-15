@@ -1,0 +1,10 @@
+[package]
+name = "isotp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "ISO-TP (ISO 15765-2) framing, segmentation and reassembly over classic CAN"
+
+[lints]
+workspace = true
+

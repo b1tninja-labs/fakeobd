@@ -1,0 +1,60 @@
+fakeobd-transcript 1
+@ source: sim
+@ scope: adapter
+@ adapter: elm327
+@ vehicle: none
+> ATZ
+< ATZ\r\r\nELM327 v1.5\r\n\r\n>
+~ gap G-ATZ-BANNER
+> ATI
+< ATI\rELM327 v1.5\r\n\r\n>
+~ gap G-IDENT
+> ATE0
+< ATE0\rOK\r\n\r\n>
+> ATL0
+< OK\r\r>
+> ATS0
+< OK\r\r>
+> ATRV
+< *V>
+~ match glob
+> ATSP6
+< OK\r\r>
+> ATDPN
+< 6\r\r>
+> 0100
+< CAN ERROR\r\r>
+~ gap G-CAN-ERROR-BENCH
+> ATSP0
+< OK\r\r>
+> 0100
+< SEARCHING...\rUNABLE TO CONNECT\r\r>
+~ gap G-SEARCH
+> ATDPN
+< A0\r\r>
+> ATH1
+< OK\r\r>
+> ATSP3
+< OK\r\r>
+> 0100
+< UNABLE TO CONNECT\r\r>
+~ gap G-UNABLE-NONCAN
+> ATI
+< ELM327 v1.5\r\r>
+~ gap G-IDENT
+> ATAT2
+< OK\r\r>
+> ATSH7E0
+< OK\r\r>
+> ATCRA7E8
+< OK\r\r>
+> ATFCSH7E0
+< OK\r\r>
+> ATFCSD300000
+< OK\r\r>
+> ATFCSM1
+< OK\r\r>
+> ATST 32
+< OK\r\r>
+> XYZ
+< ?\r\r>

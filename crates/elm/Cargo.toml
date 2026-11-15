@@ -1,0 +1,14 @@
+[package]
+name = "elm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "ELM327/STN adapter command layer in front of a simulated bus"
+
+[lints]
+workspace = true
+
+[dependencies]
+isotp = { path = "../isotp" }
+vehicle = { path = "../vehicle" }
+obd-policy = { path = "../obd-policy" }

@@ -1,0 +1,48 @@
+fakeobd-transcript 1
+@ source: sim
+@ scope: adapter
+@ adapter: elm327
+> ATZ
+< ATZ\r\r\nELM327 v1.5\r\n\r\n>
+~ gap G-ATZ-BANNER
+> ATI
+< ATI\rELM327 v1.5\r\n\r\n>
+~ gap G-IDENT
+> AT@1
+< AT@1\rOBDII to RS232 Interpreter\r\n\r\n>
+~ gap G-AT1
+> ATE0
+< ATE0\rOK\r\n\r\n>
+> ATL0
+< OK\r\r>
+> ATS0
+< OK\r\r>
+> ATS1
+< OK\r\r>
+> ATH0
+< OK\r\r>
+> ATSP6
+< OK\r\r>
+> ATDPN
+< 6\r\r>
+> ATDP
+< ISO 15765-4 (CAN 11/500)\r\r>
+~ gap G-DP-STRINGS
+> ATRV
+< *V>
+~ match glob
+> ATSP0
+< OK\r\r>
+> ATDPN
+< A0\r\r>
+> ATDP
+< AUTO\r\r>
+~ gap G-DP-STRINGS
+> ATAT1
+< OK\r\r>
+> ATST 64
+< OK\r\r>
+> ATSH7E0
+< OK\r\r>
+> ATCAF1
+< OK\r\r>

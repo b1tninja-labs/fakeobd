@@ -1,0 +1,77 @@
+fakeobd-transcript 1
+@ source: sim
+@ scope: vehicle
+@ adapter: elm327
+> ATZ
+< ATZ\r\r\nELM327 v1.5\r\n\r\n>
+> ATE0
+< ATE0\rOK\r\n\r\n>
+> ATL0
+< OK\r\r>
+> ATSP6
+< OK\r\r>
+> ATS1
+< OK\r\r>
+> ATSH7E0
+< OK\r\r>
+> 1001
+< 50 01 00 32 01 F4 \r\r>
+~ gap G-UDS-SESSION-RESP
+> 1003
+< 50 03 00 32 01 F4 \r\r>
+~ gap G-UDS-SESSION-RESP
+> 3E00
+< 7E 00 \r\r>
+> 3E80
+< NO DATA\r\r>
+> 2241AD
+< 62 41 AD 00 00 \r\r>
+> 2200 2F
+< 62 00 2F 6C \r\r>
+> 2241AD41C643AF
+< 00F\r0: 62 41 AD 00 00 41 \r1: C6 00 00 00 00 43 AF \r2: F8 00 \r\r>
+> 2241AD41C6 43AF002F
+< 012\r0: 62 41 AD 00 00 41 \r1: C6 00 00 00 00 43 AF \r2: F8 00 00 2F 6C \r\r>
+> 22FFFF
+< 7F 22 31 \r\r>
+~ gap G-UDS-NRC
+> 2290FB
+< 01A\r0: 62 90 FB 53 59 4E \r1: 54 48 45 54 49 43 2D \r2: 49 44 45 4E 54 2D 30 \r3: 30 31 2D 58 59 5A \r\r>
+> 225005
+< 62 50 05 DE AD \r\r>
+> 22
+< 7F 22 13 \r\r>
+> 1003
+< 50 03 00 32 01 F4 \r\r>
+~ gap G-UDS-SESSION-RESP
+> 225005
+< 62 50 05 DE AD \r\r>
+> ATSH7E4
+< OK\r\r>
+> 190200FF
+< 59 02 FF \r\r>
+~ gap G-19-FORMAT
+> 1901FF
+< 59 01 FF 01 00 01 \r\r>
+~ gap G-19-FORMAT
+> 190208
+< 59 02 FF 0A 0D 00 08 \r\r>
+~ gap G-19-FORMAT
+> ATSH244
+< OK\r\r>
+> ATCRA644
+< OK\r\r>
+> 2283E1
+< 02F\r0: 62 83 E1 00 01 02 \r1: 03 04 05 06 07 08 09 \r2: 0A 0B 0C 0D 0E 0F 10 \r3: 11 12 13 14 15 16 17 \r4: 18 19 1A 1B 1C 1D 1E \r5: 1F 20 21 22 23 24 25 \r6: 26 27 28 29 2A 2B \r\r>
+> 2268
+< 7F 22 13 \r\r>
+> ATCRA
+< OK\r\r>
+> ATSH7E0
+< OK\r\r>
+> 1A90
+< 013\r0: 5A 90 53 59 4E 54 \r1: 48 30 30 30 30 30 30 \r2: 30 30 30 46 4B 45 \r\r>
+~ gap G-MULTI-FORMAT
+> 1A99
+< 7F 1A 31 \r\r>
+~ gap G-UDS-NRC

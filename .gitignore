@@ -1,0 +1,9 @@
+target/
+/target*/
+**/*.rs.bk
+*.pdb
+# Audit logs and captures from local runs; goldens live in transcripts/.
+*.audit.jsonl
+/captures/
+*.log
+.env

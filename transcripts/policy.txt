@@ -1,0 +1,75 @@
+fakeobd-transcript 1
+@ source: sim
+@ scope: vehicle
+@ adapter: elm327
+> ATZ
+< ATZ\r\r\nELM327 v1.5\r\n\r\n>
+> ATE0
+< ATE0\rOK\r\n\r\n>
+> ATL0
+< OK\r\r>
+> ATSP6
+< OK\r\r>
+> ATSH7E0
+< OK\r\r>
+> 2241AD
+< 62 41 AD 00 00 \r\r>
+> 2701
+< 7F 27 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 2702AAAAAAAAAA
+< 7F 27 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 2ED21B0102
+< 7F 2E 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 2F01020300
+< 7F 2F 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 3101 5247
+< 7F 31 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 3102 0723
+< 7F 31 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 1101
+< 7F 11 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 1102
+< 7F 11 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 14FFFFFF
+< 7F 14 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 04
+< 7F 04 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 08
+< 7F 08 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 2803 01
+< 7F 28 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 3400 440000 0000
+< 7F 34 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 3601
+< 7F 36 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 37
+< 7F 37 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 8502
+< 7F 85 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 1002
+< 7F 10 12 \r\r>
+~ gap G-REFUSAL-NRC
+> 1081
+< NO DATA\r\r>
+~ gap G-REFUSAL-NRC
+> A5 01
+< 7F A5 33 \r\r>
+~ gap G-REFUSAL-NRC
+> 2241AD
+< 62 41 AD 00 00 \r\r>

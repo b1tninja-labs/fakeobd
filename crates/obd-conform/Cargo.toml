@@ -1,0 +1,10 @@
+[package]
+name = "obd-conform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Golden transcript format, replay and comparison for ELM327/STN adapters"
+
+[lints]
+workspace = true
+

@@ -1,0 +1,44 @@
+fakeobd-transcript 1
+@ source: sim
+@ scope: adapter-stn
+@ adapter: stn
+> ATZ
+< ATZ\r\r\nELM327 v1.4b\r\n\r\n>
+> ATE0
+< ATE0\rOK\r\n\r\n>
+> ATL0
+< OK\r\r>
+> ATI
+< ELM327 v1.4b\r\r>
+~ gap G-STN-STRINGS
+> STI
+< STN2230 vSIM\r\r>
+~ gap G-STN-STRINGS
+> STDI
+< FAKEOBD-SIM\r\r>
+~ gap G-STN-STRINGS
+> STMFR
+< fakeobd\r\r>
+~ gap G-STN-STRINGS
+> STSN
+< 000000000001\r\r>
+~ gap G-STN-STRINGS
+> STP 6
+< OK\r\r>
+~ gap G-ST-ACK
+> STCFCPA 7E0,7E8
+< OK\r\r>
+~ gap G-ST-ACK
+> STCFCPC
+< OK\r\r>
+~ gap G-ST-ACK
+> STFOO
+< ?\r\r>
+> ATSP6
+< OK\r\r>
+> ATSH7E0
+< OK\r\r>
+> 0105
+< 41 05 5A\r\r>
+> 0902
+< 014\r0: 49 02 01 53 59 4E\r1: 54 48 30 30 30 30 30\r2: 30 30 30 30 46 4B 45\r\r>

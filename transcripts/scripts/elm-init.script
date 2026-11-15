@@ -1,0 +1,20 @@
+# Bring-up the way an app does it: reset, identify, set echo/linefeed/spaces/headers, pick protocol.
+ATZ
+ATI
+AT@1
+ATE0
+ATL0
+ATS0
+ATS1
+ATH0
+ATSP6
+ATDPN
+ATDP
+ATRV
+ATSP0
+ATDPN
+ATDP
+ATAT1
+ATST 64
+ATSH7E0
+ATCAF1
