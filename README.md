@@ -66,9 +66,9 @@ Replay the golden transcripts: `cargo run -p fakeobd -- verify transcripts/*.txt
 
 ## Honesty about what is verified
 
-The simulator has **never been compared with a real adapter or a real vehicle**. ISO 15765-2, ISO 14229-1
-and SAE J1979 are not in `primarysource`, and no ELM327 or STN datasheet is either, so every row that depends
-on them is `[unread]` in [ROADMAP.md](ROADMAP.md). The golden transcripts are written by the simulator
+The simulator has **never been compared with a real adapter or a real vehicle**. ISO 15765-2 and SAE J1979
+are not in `primarysource`, and no ELM327 or STN datasheet is either; ISO 14229-1:2013 is, and the UDS rules
+were checked against it where ROADMAP.md says so. Every row that depends on the unread documents is `[unread]` in [ROADMAP.md](ROADMAP.md). The golden transcripts are written by the simulator
 (`@ source: sim`) and reviewed by reading; they prove the simulator is stable, not that it is right. The
 mechanism for finding out is built and waiting for hardware.
 

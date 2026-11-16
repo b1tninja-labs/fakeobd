@@ -6,6 +6,8 @@ written from the command lists in `obdlink-re/docs/COMMANDS.md`, the dialogue re
 `tools/fake_elm327.py`, the traffic the Voltage app actually sends ([AVD-TRIAL.md](AVD-TRIAL.md)) and
 recollection. None of it has been compared with hardware.
 
+**Update 2026-11-15:** `primarysource` now has `iso_*` (ISO 14229-1:2013 only) and `gm_*` (registered, corpus not yet imported: `primarysource gm import`). ISO 15765-2, SAE J1979 and the ELM327/STN datasheets are still absent. UDS rows have been checked where noted below.
+
 Each gap has an identifier. A transcript entry that carries `~ gap <id>` is expected to differ from a real
 adapter; `fakeobd replay` against an external target reports such a difference as a **known gap** instead
 of a failure, and `fakeobd verify` (the simulator replaying itself) counts it as a failure, so a gap
@@ -77,14 +79,17 @@ An unsupported PID gets silence, so the adapter says `NO DATA`. A real ECU may a
 response instead.
 
 ### G-UDS-SESSION-RESP
+**Partly closed 2026-11-15** against ISO 14229-1:2013 (now in `primarysource` as `iso:14229-1@2013`): the layout is confirmed (sub-function, then P2Server_max in 1 ms units and P2*Server_max in 10 ms units, two bytes each; the standard's own example uses 50 ms). The values are still the simulator's.
 `$10` positive response carries P2 = 50 ms and P2* = 5000 ms (`00 32 01 F4`). Format and values from memory
 of ISO 14229-1; a real module reports its own timings.
 
 ### G-19-FORMAT
+**Partly closed 2026-11-15** against ISO 14229-1:2013: the `$19` 01 response layout and the statusOfDTC bit names (0 testFailed, 2 pendingDTC, 3 confirmedDTC) are confirmed. The `$19` 02 layout and the failure-type byte were not re-read.
 `$19` sub-functions 01 and 02: availability mask `FF`, DTC format identifier `01`, a failure-type byte of
 `00`, status bits 0x08 confirmed and 0x04 pending. From memory of ISO 14229-1.
 
 ### G-UDS-NRC
+**Partly closed 2026-11-15** against ISO 14229-1:2013: 0x11 serviceNotSupported, 0x12 subFunctionNotSupported, 0x13 incorrectMessageLengthOrInvalidFormat, 0x31 requestOutOfRange and 0x33 securityAccessDenied are confirmed by number and name.
 Negative response codes `31` (request out of range), `13` (incorrect length), `12` (sub-function not
 supported), `11` (service not supported). `31` is the one volt's capture shows for `$22`; the rest are
 from memory.
@@ -117,7 +122,7 @@ is acknowledged without knowing what protocol 63 means.
 | G-STOPPED | In `--realtime`, a byte during a request abandons it with `STOPPED` | Which bytes and when |
 | G-TIMEOUT | `ATST hh` is `hh * 4` ms, `ATST00` is the default 0x32; `ATAT` is acknowledged but timing stays fixed | Adaptive timing, STN differences |
 | G-ACK-ONLY | `ATAL`, `ATAR`, `ATNL`, `ATM`, `ATR`, `ATCFC`, `ATCEA`, ... answer `OK` with no effect | Effect of each on a real adapter |
-| G-FUNC-NRC | Functional requests are not answered with NRC `11`, `12`, `31` | Real ECUs' behaviour |
+| G-FUNC-NRC | Functional requests are not answered with NRC `11`, `12`, `31` | **Confirmed against ISO 14229-1:2013 section 7.5.3.3** (they are always suppressed, with the in-active-session variants `7E`/`7F` as well, which the simulator does not model); real ECUs' behaviour is still unmeasured |
 | G-PERIODIC | The simulator never originates traffic; no periodic or unsolicited frames | Real vehicles broadcast constantly; a real adapter's monitor mode would see it |
 | G-29BIT | `ATSH` with 6 or 8 digits is accepted; nothing ever answers | 29-bit addressing is not modelled |
 | G-ECU-DATA | Every value in the shipped profile is synthetic; the DID-to-module assignment is invented except for the four demo values | Needs a vehicle |
