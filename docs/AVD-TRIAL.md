@@ -64,3 +64,32 @@ ECUs are not functional, so a `7DF` mode 01 broadcast is still only HPCM2 and BE
 - The app's behaviour on `STOPPED`, `BUFFER FULL`, `<DATA ERROR` or a slow adapter (`--realtime`).
 - `adb reverse` (the `10.0.2.2` route was the one used).
 - Any claim about a real adapter or a real car.
+
+## Re-run 2026-11-17: a VIN answer is what gates the data screen
+
+The follow-up question above ("whether these answers get the app to a data screen") now has an answer:
+**yes, and the VIN is the gate.** Re-run on a different AVD (a Google Play Services image, same Android 14
+fingerprint as the old lab; `io.tripovan.voltage` 2.3.0/14905, signed in), with one change to the setup: the
+profile's VIN placeholders replaced by a real-shaped VIN on both paths the app reads it.
+
+- **Setup.** `fakeobd serve --profile <copy of volt-lab.profile> --audit ... -v`, loopback as before. The copy
+  is kept *outside* the repo deliberately, so the shipped profile stays all-synthetic and its header warning
+  ("Do not read vehicle facts out of this file") still holds. `--profile` makes this a config change, not a
+  code change; nothing in fakeobd needed editing.
+- **App side.** WiFi mode, Host `10.0.2.2`, Port `35000`. The unsecure-adapter dialog is accepted by tapping
+  OK and sets `ble_wifi_unsecure_acknowledged=true`; the host/port persist as `wifi_adapter_address` and
+  `wifi_adapter_name`, both `10.0.2.2:35000`.
+- **Result.** The app reached a live data screen: header shows **"2017 VOLT"** with an odometer reading, the
+  Battery / EV Range / Fuel tiles render, and the button reads **Disconnect**. Status never went back to
+  "Scan was not successful". One session ran ~33,000 audited requests before the app tore down with `ATAR`.
+- **Which read supplies the VIN.** The app took it from **GMLAN `$1A 90` on `7E4`** (BECM), the *first* place
+  it asks -- confirmed twice in the audit (`seq 1` and again at `seq 34`). It did **not** use mode `09` PID
+  `02`, which was probed only by the host-side test client, not by the app. So a profile that answers `$1A 90`
+  on `7E4` is sufficient; the earlier trial's failure to reach a data screen is explained by that one refusal.
+- **Corollary for the profile.** Because `7E4` is answered first, the VIN must be correct *there*; a profile
+  that puts it only on `7E0` will still look VIN-less to the app. The shipped placeholder is retained on every
+  ECU so a scan is never a refusal.
+
+Still not verified: whether a data screen plus a real VIN triggers the app's backend entitlement call (it did
+not here -- see volt `docs/OBD-CONFIG.md`, "Re-tested on a fresh AVD"); and anything about a real adapter,
+since fakeobd has still never been compared against one.
