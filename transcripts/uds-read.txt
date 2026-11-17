@@ -73,5 +73,4 @@ fakeobd-transcript 1
 < 013\r0: 5A 90 53 59 4E 54 \r1: 48 30 30 30 30 30 30 \r2: 30 30 30 46 4B 45 \r\r>
 ~ gap G-MULTI-FORMAT
 > 1A99
-< 7F 1A 31 \r\r>
-~ gap G-UDS-NRC
+< 5A 99 53 59 39 39 \r\r>

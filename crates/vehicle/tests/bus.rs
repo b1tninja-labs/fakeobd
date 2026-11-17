@@ -454,8 +454,11 @@ fn gmlan_read_data_by_identifier_answers_from_the_lid_table() {
     let r = one(request(&mut b, 0x7E0, &[0x1A, 0x90]));
     assert_eq!(&r[..2], [0x5A, 0x90]);
     assert_eq!(&r[2..], b"SYNTH000000000FKE");
+    let r99 = one(request(&mut b, 0x7E0, &[0x1A, 0x99]));
+    assert_eq!(&r99[..2], [0x5A, 0x99]);
+    assert_eq!(&r99[2..], b"SY99");
     assert_eq!(
-        one(request(&mut b, 0x7E0, &[0x1A, 0x99])),
+        one(request(&mut b, 0x7E0, &[0x1A, 0xFE])),
         [0x7F, 0x1A, 0x31]
     );
     let becm = one(request(&mut b, 0x7E4, &[0x1A, 0x90]));
@@ -539,27 +542,34 @@ fn trial_addresses_answer_the_requests_the_app_sent() {
     assert_eq!(m7e7.len(), 1);
     assert_eq!(m7e7[0].0, 0x7EF);
     assert_eq!(&m7e7[0].1[..3], [0x62, 0x41, 0x81]);
-    for id in [0x99u8, 0xCC, 0x6F, 0x6D] {
-        assert_eq!(
-            one(request(&mut b, 0x7E1, &[0x1A, id]))[0],
-            0x5A,
-            "{id:02X}"
-        );
-        assert_eq!(
-            one(request(&mut b, 0x7E7, &[0x1A, id]))[0],
-            0x5A,
-            "{id:02X}"
-        );
+    let scan_lids = [
+        (0x90u8, &b"SYNTH000000000FKE"[..]),
+        (0x99, b"SY99"),
+        (0xCC, b"SYCC"),
+        (0xDF, b"SYNTH1ADF0000001"),
+        (0xB0, b"SYB0"),
+        (0x6F, b"SY6F"),
+        (0x6D, b"SY6D"),
+    ];
+    for addr in [0x7E0u32, 0x7E4, 0x7E1, 0x7E7, 0x241, 0x24C] {
+        for (id, data) in scan_lids {
+            let r = one(request(&mut b, addr, &[0x1A, id]));
+            assert_eq!(&r[..2], [0x5A, id], "{addr:03X} {id:02X}");
+            assert_eq!(&r[2..], data, "{addr:03X} {id:02X}");
+        }
     }
+    let broadcast = request(&mut b, 0x7DF, &[0x1A, 0xB0]);
+    assert_eq!(broadcast.len(), 2, "{broadcast:02X?}");
+    assert!(broadcast.iter().all(|(_, p)| &p[2..] == b"SYB0"));
 
     let m24c = request(&mut b, 0x24C, &[0x3E, 0x00]);
     assert_eq!(m24c.len(), 1);
     assert_eq!(m24c[0].0, 0x64C);
     assert_eq!(m24c[0].1, [0x7E, 0x00]);
-    // No response id is recorded for 621, and HPCM2's unknown $1A stays a negative response.
+    // No response id is recorded for 621. An identifier the profile does not list stays negative.
     assert!(request(&mut b, 0x621, &[0x22, 0x28, 0x89]).is_empty());
     assert_eq!(
-        one(request(&mut b, 0x7E0, &[0x1A, 0x99])),
+        one(request(&mut b, 0x7E0, &[0x1A, 0xFE])),
         [0x7F, 0x1A, 0x31]
     );
     // The added ECUs are not on the functional broadcast.

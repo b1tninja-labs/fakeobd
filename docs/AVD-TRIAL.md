@@ -52,9 +52,11 @@ Findings worth keeping:
 ## Follow-up in the profile
 
 The addresses and identifiers in the findings above are now in `profiles/volt-lab.profile`, with synthetic
-bytes. `$1A 90` is answered on `7E4` and on `241`/`641`. `24C`/`64C`, `7E1`/`7E9` and `7E7`/`7EF` exist.
-`621` is still absent: the DID appendix lists `ATSH621` and no `ATCRA` pair. The added ECUs are not
-functional, so a `7DF` mode 01 broadcast is still only HPCM2 and BECM.
+bytes. `$1A` `90`, `99`, `CC`, `DF`, `B0`, `6F` and `6D` are answered on `7E0`, `7E4`, `7E1`, `7E7`, `241`
+and `24C`. `90` is the placeholder `SYNTH000000000FKE`, not a VIN. `DF` is multi-frame. `99`, `CC`, `B0`, `6F`
+and `6D` are four-character single frames. `7DF` `$1A B0` is answered by HPCM2 and BECM, the two functional ECUs. No `42xx`
+value is decoded. `621` is still absent: the DID appendix lists `ATSH621` and no `ATCRA` pair. The added
+ECUs are not functional, so a `7DF` mode 01 broadcast is still only HPCM2 and BECM.
 
 ## Not verified
 
