@@ -41,7 +41,10 @@ counters are independent. The audit sink (a JSON-lines file) is shared.
 
 11-bit identifiers only. Physical requests to an ECU's `req` ID; the functional ID `7DF` reaches every ECU
 marked `functional=yes`. The adapter's default receive filter is `7E8..7EF`; `ATCRA`, `ATCF` and `ATCM`
-change it, which is why a request to the cluster at `244` needs `ATCRA644` (as the Voltage app does).
+change it, which is why a request to the cluster at `244` needs `ATCRA644` (as the Voltage app does), and
+why `241` and `24C` need `ATCRA641` and `ATCRA64C`. `7E1`/`7E9` and `7E7`/`7EF` fall inside the default
+filter. Those four, plus the `$1A 90` answer on `7E4`, are in the shipped profile because the 2026-11-14
+trial addressed them; they are not marked functional.
 
 ## Fault injection
 

@@ -101,6 +101,8 @@ MUTATIONS: list[tuple[str, str, str, str, list[str]]] = [
      ["-p", "fakeobd", "--test", "pipe", "close_is_idempotent"]),
     ("M41", "crates/serial-bridge/src/lib.rs", 'LineAction::Refuse => self.local("?"),', "LineAction::Refuse => {}",
      ["--manifest-path", "crates/serial-bridge/Cargo.toml", "a_relay_between"]),
+    ("M42", "profiles/volt-lab.profile", "ecu M241 req=241 resp=641", "ecu M241 req=242 resp=642",
+     ["-p", "vehicle", "--test", "bus", "trial_addresses_answer"]),
 ]
 
 

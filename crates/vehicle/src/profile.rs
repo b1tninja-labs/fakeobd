@@ -309,13 +309,17 @@ mod tests {
     }
 
     #[test]
-    fn the_shipped_profile_parses_and_has_three_ecus() {
+    fn the_shipped_profile_parses_and_has_the_cluster() {
         let v = VehicleSpec::default_vehicle();
-        assert_eq!(v.ecus.len(), 3);
+        assert_eq!(v.ecus.len(), 7);
         assert!(v
             .ecus
             .iter()
             .any(|e| e.req_id == 0x244 && e.resp_id == 0x644 && !e.functional));
+        assert!(v
+            .ecus
+            .iter()
+            .any(|e| e.req_id == 0x241 && e.resp_id == 0x641 && !e.functional));
     }
 
     #[test]

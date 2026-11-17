@@ -125,8 +125,8 @@ is acknowledged without knowing what protocol 63 means.
 | G-FUNC-NRC | Functional requests are not answered with NRC `11`, `12`, `31` | **Confirmed against ISO 14229-1:2013 section 7.5.3.3** (they are always suppressed, with the in-active-session variants `7E`/`7F` as well, which the simulator does not model); real ECUs' behaviour is still unmeasured |
 | G-PERIODIC | The simulator never originates traffic; no periodic or unsolicited frames | Real vehicles broadcast constantly; a real adapter's monitor mode would see it |
 | G-29BIT | `ATSH` with 6 or 8 digits is accepted; nothing ever answers | 29-bit addressing is not modelled |
-| G-ECU-DATA | Every value in the shipped profile is synthetic; the DID-to-module assignment is invented except for the four demo values | Needs a vehicle |
-| G-ECU-ABSENT | No module at `241`/`641`, `621`, `7E1`, `7E7`, which the Voltage app addresses | Their DIDs and behaviour are not in the volt documentation |
+| G-ECU-DATA | Every value in the shipped profile is synthetic. The identifiers the 2026-11-14 trial logged are placed on the header the app used; that is the app's addressing, not a vehicle capture. Lengths other than the four demo values and the 44-byte `83E1` block were not recorded | Needs a vehicle |
+| G-ECU-ABSENT | `621` still has no ECU: the DID appendix lists `ATSH621` and no response filter, so a response ID would be a guess. `241`/`641`, `24C`/`64C`, `7E1`/`7E9` and `7E7`/`7EF` are present with synthetic data | Wake frames on `621` and any real reply are unmeasured |
 
 ## ELM327 versus STN (as modelled)
 

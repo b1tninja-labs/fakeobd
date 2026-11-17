@@ -458,10 +458,11 @@ fn gmlan_read_data_by_identifier_answers_from_the_lid_table() {
         one(request(&mut b, 0x7E0, &[0x1A, 0x99])),
         [0x7F, 0x1A, 0x31]
     );
+    let becm = one(request(&mut b, 0x7E4, &[0x1A, 0x90]));
     assert_eq!(
-        one(request(&mut b, 0x7E4, &[0x1A, 0x90])),
-        [0x7F, 0x1A, 0x31],
-        "only HPCM2 has it"
+        &becm[2..],
+        b"SYNTH000000000FKE",
+        "the app asks BECM for $1A 90 first"
     );
     assert_eq!(one(request(&mut b, 0x7E0, &[0x1A])), [0x7F, 0x1A, 0x13]);
 }
@@ -469,8 +470,99 @@ fn gmlan_read_data_by_identifier_answers_from_the_lid_table() {
 #[test]
 fn a_physical_only_ecu_ignores_the_functional_id() {
     let mut b = bus();
-    // the cluster has DID 4368 (a single-frame answer) and is not functional: a broadcast read of it
-    // gets no answer from anyone, a physical read does
-    assert!(request(&mut b, 0x7DF, &[0x22, 0x43, 0x68]).is_empty());
+    // The cluster has no mode 01 PIDs, but PID 00 is still a single-frame bitmap, so a functional
+    // request would show its response id if it answered. 83E1 would not: it is multi-frame, and the
+    // test helper's flow control for 7DF goes to the response id minus 8, which is not 244.
+    // 4368 is also on BECM, so it no longer isolates the cluster.
+    let ids: Vec<u32> = request(&mut b, 0x7DF, &[0x01, 0x00])
+        .into_iter()
+        .map(|(id, _)| id)
+        .collect();
+    assert!(
+        !ids.contains(&0x644),
+        "the cluster answered a functional request: {ids:03X?}"
+    );
     assert_eq!(request(&mut b, 0x244, &[0x22, 0x43, 0x68]).len(), 1);
+}
+
+#[test]
+fn trial_addresses_answer_the_requests_the_app_sent() {
+    let mut b = bus();
+    let vin = b"SYNTH000000000FKE";
+
+    let becm = request(&mut b, 0x7E4, &[0x1A, 0x90]);
+    assert_eq!(becm.len(), 1);
+    assert_eq!(becm[0].0, 0x7EC);
+    assert_eq!(&becm[0].1[2..], vin);
+
+    let m241 = request(&mut b, 0x241, &[0x1A, 0x90]);
+    assert_eq!(m241.len(), 1);
+    assert_eq!(m241[0].0, 0x641);
+    assert_eq!(&m241[0].1[2..], vin);
+
+    let df = one(request(&mut b, 0x241, &[0x1A, 0xDF]));
+    assert_eq!(&df[..2], [0x5A, 0xDF]);
+    assert!(
+        df.len() > 7,
+        "the app sets a flow-control override before $1A DF: {df:02X?}"
+    );
+
+    for did in [0x8005u16, 0x8090, 0x809C, 0x8537, 0xCB31] {
+        let r = one(request(&mut b, 0x241, &[0x22, (did >> 8) as u8, did as u8]));
+        assert_eq!(&r[..3], [0x62, (did >> 8) as u8, did as u8], "{did:04X}");
+    }
+    for did in [
+        0x40E9u16, 0x41A3, 0x41A6, 0x41AD, 0x41C5, 0x41C6, 0x432D, 0x434F, 0x4356, 0x4368, 0x4369,
+        0x437D, 0x4389, 0x43A5, 0x43A6, 0x43AE, 0x43AF, 0x4470, 0x45FF, 0x8334, 0x83E2,
+    ] {
+        let r = one(request(&mut b, 0x7E4, &[0x22, (did >> 8) as u8, did as u8]));
+        assert_eq!(r[0], 0x62, "{did:04X} {r:02X?}");
+    }
+    assert_eq!(
+        one(request(&mut b, 0x7E4, &[0x22, 0x41, 0xAD])),
+        [0x62, 0x41, 0xAD, 0x00, 0x00]
+    );
+    assert_eq!(
+        one(request(&mut b, 0x7E4, &[0x22, 0x41, 0xC6])),
+        [0x62, 0x41, 0xC6, 0x00, 0x00, 0x00, 0x00]
+    );
+    assert_eq!(
+        one(request(&mut b, 0x7E4, &[0x22, 0x43, 0xAF])),
+        [0x62, 0x43, 0xAF, 0xF8, 0x00]
+    );
+
+    let m7e1 = request(&mut b, 0x7E1, &[0x22, 0x28, 0x89]);
+    assert_eq!(m7e1.len(), 1);
+    assert_eq!(m7e1[0].0, 0x7E9);
+    assert_eq!(&m7e1[0].1[..3], [0x62, 0x28, 0x89]);
+    let m7e7 = request(&mut b, 0x7E7, &[0x22, 0x41, 0x81]);
+    assert_eq!(m7e7.len(), 1);
+    assert_eq!(m7e7[0].0, 0x7EF);
+    assert_eq!(&m7e7[0].1[..3], [0x62, 0x41, 0x81]);
+    for id in [0x99u8, 0xCC, 0x6F, 0x6D] {
+        assert_eq!(
+            one(request(&mut b, 0x7E1, &[0x1A, id]))[0],
+            0x5A,
+            "{id:02X}"
+        );
+        assert_eq!(
+            one(request(&mut b, 0x7E7, &[0x1A, id]))[0],
+            0x5A,
+            "{id:02X}"
+        );
+    }
+
+    let m24c = request(&mut b, 0x24C, &[0x3E, 0x00]);
+    assert_eq!(m24c.len(), 1);
+    assert_eq!(m24c[0].0, 0x64C);
+    assert_eq!(m24c[0].1, [0x7E, 0x00]);
+    // No response id is recorded for 621, and HPCM2's unknown $1A stays a negative response.
+    assert!(request(&mut b, 0x621, &[0x22, 0x28, 0x89]).is_empty());
+    assert_eq!(
+        one(request(&mut b, 0x7E0, &[0x1A, 0x99])),
+        [0x7F, 0x1A, 0x31]
+    );
+    // The added ECUs are not on the functional broadcast.
+    assert_eq!(request(&mut b, 0x7DF, &[0x01, 0x00]).len(), 2);
+    assert_eq!(request(&mut b, 0x7DF, &[0x2E, 0xD2, 0x1B]).len(), 2);
 }

@@ -49,9 +49,16 @@ Findings worth keeping:
   answer: framing and padding worked.
 - The app reset the adapter (`ATZ`) and re-initialised repeatedly; it did not give up.
 
+## Follow-up in the profile
+
+The addresses and identifiers in the findings above are now in `profiles/volt-lab.profile`, with synthetic
+bytes. `$1A 90` is answered on `7E4` and on `241`/`641`. `24C`/`64C`, `7E1`/`7E9` and `7E7`/`7EF` exist.
+`621` is still absent: the DID appendix lists `ATSH621` and no `ATCRA` pair. The added ECUs are not
+functional, so a `7DF` mode 01 broadcast is still only HPCM2 and BECM.
+
 ## Not verified
 
-- Whether giving the simulator the missing modules and DIDs gets the app to a data screen.
+- Whether these answers get the app to a data screen. The trial above was not re-run.
 - The app's behaviour on `STOPPED`, `BUFFER FULL`, `<DATA ERROR` or a slow adapter (`--realtime`).
 - `adb reverse` (the `10.0.2.2` route was the one used).
 - Any claim about a real adapter or a real car.

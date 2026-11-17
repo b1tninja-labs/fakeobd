@@ -30,11 +30,14 @@ that, but it has no vehicle, no ISO-TP and nowhere to put a reusable policy.
    `ATCAF0`, `ATZ`, `ATRV`, ...), the replies `?`, `OK`, `NO DATA`, `SEARCHING...`, `UNABLE TO CONNECT`,
    `CAN ERROR`, `BUFFER FULL`, `<DATA ERROR`, `STOPPED`, and an STN profile with the `ST` family.
    Where ELM327 and STN differ, the difference is a recorded gap: [docs/ground-truth-gaps.md](docs/ground-truth-gaps.md).
-2. **A vehicle**: three ECUs on a simulated 11-bit 500 kbit/s HS-CAN (`7E0`/`7E8`, `7E4`/`7EC`, and a cluster
-   at `244`/`644`) answering SAE J1979 modes 01, 02, 03, 06, 07, 09, 0A and UDS `$10`, `$19`, `$22`, `$3E`
-   and GMLAN `$1A`, with ISO-TP segmentation and flow control in both directions. Data is from volt's
-   documentation where it has any (arbitration IDs, module names, DID numbers, four demo values, three DTCs)
-   and is otherwise synthetic. See [profiles/volt-lab.profile](profiles/volt-lab.profile).
+2. **A vehicle**: ECUs on a simulated 11-bit 500 kbit/s HS-CAN. HPCM2 (`7E0`/`7E8`), BECM (`7E4`/`7EC`)
+   and the cluster (`244`/`644`) are the original three; the profile also answers the physical addresses
+   the Voltage app used in the 2026-11-14 trial (`241`/`641`, `24C`/`64C`, `7E1`/`7E9`, `7E7`/`7EF`).
+   They answer SAE J1979 modes 01, 02, 03, 06, 07, 09, 0A and UDS `$10`, `$19`, `$22`, `$3E` and GMLAN
+   `$1A`, with ISO-TP segmentation and flow control in both directions. Data is from volt's documentation
+   where it has any (arbitration IDs, module names, DID numbers, four demo values, three DTCs) and from
+   that trial's request log; the bytes are otherwise synthetic. See
+   [profiles/volt-lab.profile](profiles/volt-lab.profile).
 3. **A safety policy** that runs before any service: read-only by default, `$27` refused under every
    configuration, every decision audited. It is a separate library, `obd-policy`, for reuse in a relay.
    [docs/SCOPE.md](docs/SCOPE.md).
