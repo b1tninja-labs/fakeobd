@@ -1,9 +1,14 @@
-//! `isotp`: ISO-TP (ISO 15765-2) framing over classic CAN, 8-byte frames.
+//! `isotp`: ISO-TP framing for 8-byte classic CAN frames and normal addressing.
 //!
-//! **Provenance.** ISO 15765-2 is not in `primarysource`; the PCI nibbles, length fields, flow-status
-//! values and STmin encoding below are from memory and every row that depends on them is `[unread]` in
-//! ROADMAP.md. What the tests prove is that this crate agrees with itself and with the transcripts it
-//! produced, not that it agrees with the standard.
+//! ISO 15765-2:2016 §9 is the transport layer protocol. Single-frame transmission is §9.2:
+//! §9.2.1 when the transmit data length is 8, §9.2.2 when it is greater. §9.3 is multiple-frame
+//! transmission, used once a message is longer than the single-frame maximum for that transmit
+//! data length and addressing. With a transmit data length of 8 and normal addressing, that
+//! maximum is 7 data bytes. Extended or mixed addressing, and any transmit data length above 8,
+//! use a different maximum. This crate implements only the 8-byte normal-addressing case.
+//!
+//! PCI nibbles, flow-status values and STmin encoding were not re-read against §9.6. Those rows
+//! stay `[unread]` in ROADMAP.md.
 
 /// One classic CAN data frame with an 11-bit identifier.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -12,7 +17,8 @@ pub struct CanFrame {
     pub data: Vec<u8>,
 }
 
-/// Longest message ISO-TP can describe with a 12-bit length.
+/// Longest 12-bit first-frame length this crate sends. A longer message uses a wider length
+/// field, which is not implemented.
 pub const MAX_LEN: usize = 4095;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -140,7 +146,9 @@ pub enum SegmentError {
     TooLong(usize),
 }
 
-/// Cut `payload` into frames. `pad` fills every frame to 8 bytes when set.
+/// Cut `payload` into frames for a transmit data length of 8 and normal addressing.
+/// Seven data bytes or fewer are one single frame; eight or more start with a first frame.
+/// `pad` fills every frame to 8 bytes when set.
 pub fn segment(payload: &[u8], pad: Option<u8>) -> Result<Segments, SegmentError> {
     if payload.is_empty() {
         return Err(SegmentError::Empty);
@@ -320,6 +328,8 @@ mod tests {
 
     #[test]
     fn seven_bytes_is_single_and_eight_is_first_plus_consecutive() {
+        // Transmit data length 8, normal addressing. Not the limit in §9.2.2 or with
+        // extended or mixed addressing.
         assert!(segment(&[1; 7], None).unwrap().rest.is_empty());
         let s = segment(&[1; 8], None).unwrap();
         assert_eq!(s.first, [0x10, 0x08, 1, 1, 1, 1, 1, 1]);

@@ -31,9 +31,14 @@ must pass before a change is done.
 
 ## Invariants
 
-- **Most standards are not read.** `primarysource` has ISO 14229-1:2013 (`iso_*` tools: read it before writing a UDS
-  rule). ISO 15765-2, SAE J1979, GMLAN and the ELM327/STN datasheets are not in it, and the `gm_*` corpus (GM OBD PDFs)
-  needs `primarysource gm import` before it answers. Do not cite a section or quote normative wording from memory; mark the row `[unread]` in
+- **Most standards are not read.** `primarysource` has ISO 14229-1:2013, ISO 15765-2:2016 and ISO 15031-3:2004
+  (`iso_*` tools: read a clause before writing a rule that depends on it). ISO 15765-2:2016 §9 is the transport
+  layer protocol. Single-frame transmission is §9.2 (§9.2.1 when the transmit data length is 8, §9.2.2 when it
+  is greater). §9.3 is multiple-frame transmission. A 7-byte single frame is the §9.2.1 normal-addressing case,
+  not every case. That document does not define `ATSP6`, a `+0x400` response offset, or a bit rate. ISO 15031-3:2004
+  is the diagnostic connector. SAE J1979:2002 is an unindexed scan: do not cite mode numbers from it, and do not
+  change replies to match it. GMLAN and the ELM327/STN datasheets are not imported, and the `gm_*` corpus needs
+  `primarysource gm import` before it answers. Do not cite a section or quote normative wording from memory; mark the row `[unread]` in
   ROADMAP.md and add or update the gap in `docs/ground-truth-gaps.md`. RFC questions go through the `rfc_*`
   tools.
 - A row is `[ok]` only when a named test exists and failed when the code it covers was deliberately broken.

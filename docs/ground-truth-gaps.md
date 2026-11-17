@@ -1,12 +1,14 @@
 # Ground-truth gaps
 
 Every place where the simulator's behaviour is a guess about a real adapter or a real ECU. No ELM327 or
-STN datasheet, and none of ISO 15765-2, ISO 14229-1 or SAE J1979, is in `primarysource`; the behaviour was
-written from the command lists in `obdlink-re/docs/COMMANDS.md`, the dialogue recorded by volt's
-`tools/fake_elm327.py`, the traffic the Voltage app actually sends ([AVD-TRIAL.md](AVD-TRIAL.md)) and
-recollection. None of it has been compared with hardware.
+STN datasheet is in `primarysource`. The behaviour was written from the command lists in
+`obdlink-re/docs/COMMANDS.md`, the dialogue recorded by volt's `tools/fake_elm327.py`, the traffic the
+Voltage app actually sends ([AVD-TRIAL.md](AVD-TRIAL.md)) and recollection. None of it has been compared
+with hardware.
 
-**Update 2026-11-15:** `primarysource` now has `iso_*` (ISO 14229-1:2013 only) and `gm_*` (registered, corpus not yet imported: `primarysource gm import`). ISO 15765-2, SAE J1979 and the ELM327/STN datasheets are still absent. UDS rows have been checked where noted below.
+**Update 2026-11-15:** `primarysource` has ISO 14229-1:2013 and `gm_*` (registered, corpus not yet imported: `primarysource gm import`). UDS rows have been checked where noted below.
+
+**Update 2026-11-16:** ISO 15765-2:2016 and ISO 15031-3:2004 are imported. In ISO 15765-2:2016, §9 is the transport layer protocol, §9.2 is single-frame transmission (§9.2.1 when the transmit data length is 8, §9.2.2 when it is greater), and §9.3 is multiple-frame transmission. The simulator's 7-byte single frame is the §9.2.1 normal-addressing case. A search of that document has no `ATSP6`, no `0x400`, and no bit rate. ISO 15031-3:2004 is the diagnostic connector. SAE J1979:2002 is an unindexed scan; mode numbers are not cited from it. Sequence-number and STmin rows were not re-read.
 
 Each gap has an identifier. A transcript entry that carries `~ gap <id>` is expected to differ from a real
 adapter; `fakeobd replay` against an external target reports such a difference as a **known gap** instead

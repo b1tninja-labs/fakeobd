@@ -172,7 +172,7 @@ fn read_did_single_and_multi_frame_and_unknown() {
     let cluster = one(request(&mut b, 0x244, &[0x22, 0x83, 0xE1]));
     assert_eq!(cluster.len(), 3 + 44);
     assert_eq!(cluster[3 + 43], 0x2B);
-    // a request longer than seven bytes is itself multi-frame
+    // transmit data length 8, normal addressing: longer than seven data bytes is multi-frame
     let r = one(request(
         &mut b,
         0x7E0,
