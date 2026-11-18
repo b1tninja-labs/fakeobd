@@ -55,7 +55,10 @@ The addresses and identifiers in the findings above are now in `profiles/volt-la
 bytes. `$1A` `90`, `99`, `CB`, `CC`, `DF`, `B0`, `6F` and `6D` are answered on `7E0`, `7E4`, `7E1`, `7E7`,
 `241` and `24C`. `90` is the Voltage app's Demo vehicle literal, the same string on every ECU and on mode 09
 PID 02. `DF` is multi-frame. `99`, `CB`, `CC`, `B0`, `6F` and `6D` are four-character single frames. `7DF`
-`$1A B0` is answered by HPCM2 and BECM, the two functional ECUs. No `42xx` value is decoded. `621` is still
+`$1A B0` is answered by HPCM2 and BECM, the two functional ECUs. The BECM comments name the
+Voltage 2.3.0 scale for the reads the decoder assigns: `002F` fuel, `8334` displayed state of charge,
+`43AF` raw state of charge, `41A3` capacity, `40E9` resistance, `43A6` isolation, `434F` temperature,
+`43A5` charge count, `4470` energy, `41C5` EV trip, `4181` cell voltage. `621` is still
 absent: the DID appendix lists `ATSH621` and no `ATCRA` pair. The added ECUs are not functional, so a `7DF`
 mode 01 broadcast is still only HPCM2 and BECM.
 

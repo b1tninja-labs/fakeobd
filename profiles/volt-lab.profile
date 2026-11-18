@@ -41,7 +41,7 @@ info 0A hex 01 48 50 43 4D 32 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 # ECU
 mode06 A1 hex 01 0A 0010 0000 00FF 02 0A 0030 0000 00FF
 dtc stored P0A7E
 dtc pending P0AE3
-did 002F 6C                     # home-screen fuel percent: byte * 100 / 255. 6C is 42%. Gallons are that fraction of about 9 US gal.
+did 002F 6C                     # Fuel Level: first byte / 255, shown as a percent. 6C is 42%. Gallons are that fraction of the app's US-gallon setting; the lab screen used 8.9.
 did 41AD 0000                   # demo
 did 41C6 00000000               # demo
 did 43AF F800                   # demo
@@ -70,27 +70,29 @@ dtc stored P0A0D status=08
 did 4210 0E10
 did 4211 0E0F
 did 4212 0E11
-# $22 reads the trial logged on ATSH7E4. Demo bytes where the demo log has them. 4368 is one byte, as on the cluster. The rest are two synthetic bytes; those lengths were not recorded.
-did 40E9 0000
-did 41A3 0000
-did 41A6 0000
-did 41AD 0000                   # demo
-did 41C5 0000
-did 41C6 00000000               # demo
+# $22 reads the trial logged on ATSH7E4. Scales are the Voltage 2.3.0 decoder, not a standard.
+# Demo bytes stay where the demo log has them: 41AD, 41C6, 43AF. 4368 is one byte, as on the cluster.
+# 41C5 is four bytes because that parser reads four. The other lengths were not recorded.
+did 40E9 0190                   # internal resistance, milliohms: uint16 / 2. 0190 is 200
+did 41A3 01C2                   # battery capacity, Ah: uint16 / 10. 01C2 is 45.0. Replaces 45FF when both answer
+did 41A6 0000                   # two data bytes as an integer, divided by 64
+did 41AD 0000                   # liters used: uint16 * 0.125. Demo bytes stay 0000
+did 41C5 00000280               # EV trip: four bytes as an integer, divided by 64. 00000280 is 10.0
+did 41C6 00000000               # ICE trip: four bytes as an integer, divided by 64. Demo bytes stay 0
 did 432D 0000
-did 434F 0000
+did 434F 4100                   # battery temperature, C: first byte - 40. 41 is 25 C, shown as 77 F
 did 4356 0000
 did 4368 00
 did 4369 0000
 did 437D 0000
 did 4389 0000
-did 43A5 0000
-did 43A6 0000
+did 43A5 0320                   # charge count: uint16. 0320 is 800
+did 43A6 0C00                   # isolation, kilohms: first byte * 25. 0C is 300
 did 43AE 0000
-did 43AF F800                   # demo
-did 4470 0000
-did 45FF 0000
-did 8334 0000
+did 43AF F800                   # state of charge, raw percent: uint16 * 100 / 65535. F800 is 96.9%. Demo bytes
+did 4470 0078                   # kWh used: uint16 / 10. 0078 is 12.0
+did 45FF 0000                   # capacity candidate, Ah: uint16 / 100. Dropped when 41A3 answers
+did 8334 8000                   # state of charge, displayed percent: first byte * 100 / 255. 80 is 50.2%
 did 83E2 0000
 
 ecu IPC req=244 resp=644 functional=no pad=00 latency=6
@@ -138,7 +140,7 @@ lid 6F ascii SY6F
 lid 6D ascii SY6D
 
 ecu M7E7 req=7E7 resp=7EF functional=no pad=00 latency=4
-did 4181 0000
+did 4181 BD6F                   # cell voltage, volts: uint16 * 5 / 65535. BD6F is 3.70. The app asks the next cells as 4181 plus a cell index, on header DACDF1
 lid 90 ascii 1G1RB6S55HU000000
 lid 99 ascii SY99
 lid CC ascii SYCC
