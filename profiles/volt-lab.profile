@@ -41,7 +41,7 @@ info 0A hex 01 48 50 43 4D 32 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 # ECU
 mode06 A1 hex 01 0A 0010 0000 00FF 02 0A 0030 0000 00FF
 dtc stored P0A7E
 dtc pending P0AE3
-did 002F 6C                     # demo
+did 002F 6C                     # home-screen fuel percent: byte * 100 / 255. 6C is 42%. Gallons are that fraction of about 9 US gal.
 did 41AD 0000                   # demo
 did 41C6 00000000               # demo
 did 43AF F800                   # demo
