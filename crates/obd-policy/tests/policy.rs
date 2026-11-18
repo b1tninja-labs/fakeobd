@@ -142,6 +142,9 @@ fn parse_rejects_what_it_does_not_understand() {
         "allow 2",
         "allow ZZ",
         "allow 10 0G",
+        "allow-pdu",
+        "allow-pdu ZZ",
+        "allow-pdu AE3",
         "frob 22",
         "preset wide",
         "nrc",
@@ -234,6 +237,72 @@ fn audit_sink_receives_one_json_line_per_decision() {
     let text = String::from_utf8(buf.0.lock().unwrap().clone()).unwrap();
     assert_eq!(text.lines().count(), 1);
     assert!(text.contains("\"verdict\":\"deny\"") && text.contains("\"sid\":\"14\""));
+}
+
+const LAB_POLICY: &str = include_str!("../../../profiles/lab-control.policy");
+
+fn frames_in(text: &str) -> Vec<Vec<u8>> {
+    text.lines()
+        .filter_map(|raw| {
+            let line = raw.split('#').next().unwrap_or("").trim();
+            let mut it = line.split_whitespace();
+            if it.next() != Some("allow-pdu") {
+                return None;
+            }
+            let hex = it.next().expect("allow-pdu has a request");
+            Some(
+                (0..hex.len() / 2)
+                    .map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).unwrap())
+                    .collect(),
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn lab_file_keeps_security_access_on_the_hard_floor() {
+    let frames = frames_in(LAB_POLICY);
+    assert_eq!(frames.len(), 9);
+    let window = [0xAE, 0x3B, 0xFF, 0x01, 0x01, 0x01, 0x01];
+    let door = [0xAE, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00];
+    let port = [0xAE, 0x47, 0x02, 0x02, 0x00, 0x00, 0x00];
+    for required in [&window[..], &door[..], &port[..]] {
+        assert!(
+            frames.iter().any(|f| f == required),
+            "lab file is missing {required:02X?}"
+        );
+    }
+    let lab = Policy::parse(LAB_POLICY).unwrap();
+    let plain = Policy::read_only();
+    for frame in &frames {
+        assert_eq!(
+            plain.evaluate(frame).verdict,
+            Verdict::Deny(Reason::NotAllowlisted),
+            "{frame:02X?}"
+        );
+        assert!(lab.evaluate(frame).allowed(), "{frame:02X?}");
+    }
+    let unknown = [0xAE, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80];
+    assert_eq!(
+        lab.evaluate(&unknown).verdict,
+        Verdict::Deny(Reason::NotAllowlisted)
+    );
+    assert!(lab.evaluate(&[0x3E, 0x00]).allowed());
+    assert_eq!(
+        lab.evaluate(&[0x27, 0x01]).verdict,
+        Verdict::Deny(Reason::HardFloor)
+    );
+    assert!(Policy::parse("allow-pdu 27").is_err());
+    assert!(Policy::parse("allow-pdu 2701").is_err());
+    assert!(Policy::parse(&format!("{LAB_POLICY}\nallow 27\n")).is_err());
+    assert!(Policy::parse(&format!("{LAB_POLICY}\nallow-pdu 2701\n")).is_err());
+    let mut parsed = Policy::parse(LAB_POLICY).unwrap();
+    assert!(parsed.allow(0x27, Subs::Any).is_err());
+    assert!(parsed.allow_pdu(&[0x27, 0x01]).is_err());
+    assert_eq!(
+        parsed.evaluate(&[0x27, 0x01]).verdict,
+        Verdict::Deny(Reason::HardFloor)
+    );
 }
 
 #[test]

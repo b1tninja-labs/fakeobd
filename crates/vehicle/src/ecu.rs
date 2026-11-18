@@ -1,8 +1,10 @@
 //! One simulated ECU: an ISO-TP endpoint plus the OBD-II and UDS read services.
 //!
 //! Every complete request goes through the policy before any service code runs, and the decision is
-//! written to the audit log. The ECU implements no write service: a state-changing request that a
-//! configuration chose to allow still gets `serviceNotSupported`.
+//! written to the audit log. The ECU implements no write service (`$2E`, `$31`, `$34`-`$37`, `$27`):
+//! a state-changing request that a configuration chose to allow still gets `serviceNotSupported`.
+//! The exception is an exact body-control frame the lab policy admitted: that gets
+//! [`LAB_CONTROL_ACK`] and changes no stored state.
 
 use crate::fault::Effects;
 use crate::profile::{DtcKind, EcuSpec};
@@ -14,6 +16,13 @@ use std::collections::VecDeque;
 
 /// The OBD-II functional (broadcast) request ID for 11-bit CAN.
 pub const FUNCTIONAL_ID: u32 = 0x7DF;
+
+/// Positive acknowledgement for one exact lab control frame.
+///
+/// Simulator choice: the request identifier with bit 6 set. ISO 14229-1:2013 §7.3.2 (read
+/// 2026-11-18) uses that bit for a positive response of a service Table 2 defines. Service `AE`
+/// is not named in that table. GMLAN is not imported. `[unread]`
+pub const LAB_CONTROL_ACK: [u8; 1] = [0xEE];
 
 /// Milliseconds between flow-control wait frames when the fault injects them.
 const WAIT_STEP_MS: u32 = 50;
@@ -254,6 +263,13 @@ impl Ecu {
                 [_, _] => Reply::Neg(0x12),
                 _ => Reply::Neg(0x13),
             },
+            0xAE => {
+                if lab_control_frame(pdu) {
+                    Reply::Pos(LAB_CONTROL_ACK.to_vec())
+                } else {
+                    Reply::Neg(0x11)
+                }
+            }
             _ => Reply::Neg(0x11),
         }
     }
@@ -394,6 +410,23 @@ impl Ecu {
         }
         Reply::Pos(out)
     }
+}
+
+/// The body-control payloads a lab policy may admit. Matching one does not move a mechanism
+/// or change session or data. Any other `AE` payload keeps `serviceNotSupported`.
+fn lab_control_frame(pdu: &[u8]) -> bool {
+    const FRAMES: &[&[u8]] = &[
+        &[0xAE, 0x3B, 0xFF, 0x01, 0x01, 0x01, 0x01],
+        &[0xAE, 0x3B, 0xFF, 0x02, 0x02, 0x02, 0x02],
+        &[0xAE, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00],
+        &[0xAE, 0x02, 0xF0, 0xF0, 0x00, 0x00, 0x00],
+        &[0xAE, 0x02, 0xF0, 0x00, 0x00, 0x00, 0x00],
+        &[0xAE, 0x01, 0x04, 0x04, 0x00, 0x00, 0x00],
+        &[0xAE, 0x47, 0x02, 0x02, 0x00, 0x00, 0x00],
+        &[0xAE, 0x47, 0x00, 0x00, 0x00, 0x01, 0x02],
+        &[0xAE, 0x47, 0x00, 0x00, 0x00, 0x01, 0x01],
+    ];
+    FRAMES.contains(&pdu)
 }
 
 fn suppressable(sub: u8, bytes: Vec<u8>) -> Reply {

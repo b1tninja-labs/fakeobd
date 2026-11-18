@@ -40,7 +40,9 @@ that, but it has no vehicle, no ISO-TP and nowhere to put a reusable policy.
    [profiles/volt-lab.profile](profiles/volt-lab.profile).
 3. **A safety policy** that runs before any service: read-only by default, `$27` refused under every
    configuration, every decision audited. It is a separate library, `obd-policy`, for reuse in a relay.
-   [docs/SCOPE.md](docs/SCOPE.md).
+   [docs/SCOPE.md](docs/SCOPE.md). A separate lab file,
+   [profiles/lab-control.policy](profiles/lab-control.policy), admits the documented body-control frames;
+   pass it with `--policy`. The default policy still refuses them.
 4. **A conformance harness** (`obd-conform`): golden transcripts replayed against the simulator now and against
    a real known-good adapter later, a capture format and a comparison tool.
    [docs/transcript-format.md](docs/transcript-format.md).
@@ -91,7 +93,7 @@ crates/vehicle       profile parser, ECUs, bus, faults
 crates/elm           the adapter
 crates/obd-conform   transcripts, replay, capture, compare
 crates/fakeobd       server, wiring, CLI
-profiles/            vehicle profile
+profiles/            vehicle profile and the lab control policy
 transcripts/         golden transcripts and the scripts that captured them
 tools/break_check.py break-and-watch-fail
 docs/                scope, architecture, gaps, transcript format, trial notes

@@ -1,0 +1,20 @@
+# Lab-only policy. Not the default.
+# The read-only preset applies first, so tester present (3E) stays allowed.
+# Each allow-pdu line admits one request. A payload that is not listed stays
+# not-allowlisted. A line that names service 27 is rejected.
+# Service AE is the GMLAN control service these frames use. ISO 14229-1:2013
+# §7.3.2 Table 2 does not name it (read 2026-11-18). GMLAN is not imported. [unread]
+# No download and no general memory write.
+
+# Year-17 windows, module 40 (request id 241).
+allow-pdu AE3BFF01010101
+allow-pdu AE3BFF02020202
+# Lock fallback, then the AE02F0 pair. Unlock uses the same pair.
+allow-pdu AE010101000000
+allow-pdu AE02F0F0000000
+allow-pdu AE02F000000000
+allow-pdu AE010404000000
+# Charge port on module CB (request id 7E4).
+allow-pdu AE470202000000
+allow-pdu AE470000000102
+allow-pdu AE470000000101

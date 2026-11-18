@@ -129,6 +129,7 @@ is acknowledged without knowing what protocol 63 means.
 | G-29BIT | `ATSH` with 6 or 8 digits is accepted; nothing ever answers | 29-bit addressing is not modelled |
 | G-ECU-DATA | Every value in the shipped profile is synthetic. The identifiers the 2026-11-14 trial logged are placed on the header the app used; that is the app's addressing, not a vehicle capture. Lengths other than the four demo values and the 44-byte `83E1` block were not recorded | Needs a vehicle |
 | G-ECU-ABSENT | `621` still has no ECU: the DID appendix lists `ATSH621` and no response filter, so a response ID would be a guess. `241`/`641`, `24C`/`64C`, `7E1`/`7E9` and `7E7`/`7EF` are present with synthetic data | Wake frames on `621` and any real reply are unmeasured |
+| G-GMLAN-AE | The lab policy admits nine exact service-`AE` frames and the ECU answers each with the single byte `EE`. The default policy answers `7F AE 33` (not allowlisted). An `AE` payload that is not one of the nine stays on that refusal. If a configuration allows the service and the payload is still unknown, the ECU answers `7F AE 11` and stores nothing. ISO 14229-1:2013 §7.3.2 Table 2 (read 2026-11-18) does not name service `AE`. §12.2 names service `0x2F`. `EE` sets bit 6 of `AE`, which §7.3.2 describes for a positive response of a service that table defines. GMLAN is not imported. `[unread]` | A captured positive reply for these frames |
 
 ## ELM327 versus STN (as modelled)
 

@@ -117,6 +117,9 @@ pub struct Policy {
     allow: Vec<Rule>,
     deny: Vec<Rule>,
     deny_dids: Vec<(u16, u16)>,
+    /// Exact requests admitted on top of the service rules. A different payload of the same service
+    /// stays refused.
+    allow_pdus: Vec<Vec<u8>>,
     /// Overrides the NRC for refusals when set.
     nrc_override: Option<u8>,
 }
@@ -134,6 +137,7 @@ impl Policy {
             allow: Vec::new(),
             deny: Vec::new(),
             deny_dids: Vec::new(),
+            allow_pdus: Vec::new(),
             nrc_override: None,
         }
     }
@@ -170,6 +174,23 @@ impl Policy {
         Ok(())
     }
 
+    /// Admit this exact request and no other payload of the same service.
+    ///
+    /// Fails for an empty request or a service in [`HARD_DENY`]. A lab file cannot
+    /// use this to let `$27` through.
+    pub fn allow_pdu(&mut self, pdu: &[u8]) -> Result<(), PolicyError> {
+        let Some(&sid) = pdu.first() else {
+            return Err(PolicyError("a request needs a service identifier".into()));
+        };
+        if HARD_DENY.contains(&sid) {
+            return Err(PolicyError(format!(
+                "service {sid:02X} is refused unconditionally and cannot be allowed"
+            )));
+        }
+        self.allow_pdus.push(pdu.to_vec());
+        Ok(())
+    }
+
     /// Add a deny rule. Deny rules win over allow rules.
     pub fn deny(&mut self, sid: u8, subs: Subs) {
         self.deny.push(Rule { sid, subs });
@@ -191,6 +212,7 @@ impl Policy {
     /// preset read-only | none     # must come first if present; default is read-only
     /// allow 22                    # any sub-function
     /// allow 10 01,03              # only these sub-functions
+    /// allow-pdu AE3BFF01010101   # this request only
     /// deny 3E
     /// deny-did F100-F1FF
     /// nrc 22
@@ -228,6 +250,11 @@ impl Policy {
                     } else {
                         policy.deny(sid, subs);
                     }
+                }
+                "allow-pdu" => {
+                    let hex = it.next().ok_or_else(|| err("missing request"))?;
+                    let bytes = hex_bytes(hex).ok_or_else(|| err("request is not even hex"))?;
+                    policy.allow_pdu(&bytes).map_err(|e| err(&e.0))?;
                 }
                 "deny-did" => {
                     let range = it.next().ok_or_else(|| err("missing range"))?;
@@ -316,6 +343,9 @@ impl Policy {
         if self.allow.iter().any(|r| r.matches(sid, sub)) {
             return Verdict::Allow;
         }
+        if self.allow_pdus.iter().any(|p| p == pdu) {
+            return Verdict::Allow;
+        }
         if self.allow.iter().any(|r| r.covers_sid(sid)) {
             return Verdict::Deny(Reason::SubfunctionNotAllowed);
         }
@@ -329,4 +359,13 @@ fn hex_u8(s: &str) -> Option<u8> {
     } else {
         None
     }
+}
+
+fn hex_bytes(s: &str) -> Option<Vec<u8>> {
+    if s.is_empty() || !s.len().is_multiple_of(2) {
+        return None;
+    }
+    (0..s.len() / 2)
+        .map(|i| u8::from_str_radix(&s[2 * i..2 * i + 2], 16).ok())
+        .collect()
 }

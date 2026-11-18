@@ -4,7 +4,9 @@
 //! `$3E`, with ISO-TP segmentation and flow control. Every request passes the [`obd_policy::Policy`]
 //! first. Data comes from a [`VehicleSpec`]; the shipped one is synthetic.
 //!
-//! No service here writes anything, and none ever computes a SecurityAccess key.
+//! No service here writes stored data, and none ever computes a SecurityAccess key. An exact
+//! body-control frame that the lab policy admitted is answered with [`LAB_CONTROL_ACK`] and
+//! changes nothing else.
 
 mod bus;
 mod ecu;
@@ -12,7 +14,7 @@ mod fault;
 mod profile;
 
 pub use bus::{Bus, BusError};
-pub use ecu::{bitmap, Ecu, Timed, FUNCTIONAL_ID};
+pub use ecu::{bitmap, Ecu, Timed, FUNCTIONAL_ID, LAB_CONTROL_ACK};
 pub use fault::{parse_fault_line, AdapterFault, BusFault, Effects, FaultKind, FaultPlan};
 pub use profile::{
     dtc_code, dtc_text, DidSpec, DtcKind, DtcSpec, EcuSpec, VehicleSpec, DEFAULT_PROFILE,

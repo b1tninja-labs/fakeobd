@@ -5,7 +5,7 @@ Each row: the code was changed (`tools/break_check.py` holds the exact edit), th
 | Id | File | Result | Tests that failed |
 |---|---|---|---|
 | M01 | `crates/obd-policy/src/policy.rs` | KILLED | default_policy_admits_exactly_the_read_set_over_all_256_service_ids |
-| M02 | `crates/obd-policy/src/policy.rs` | KILLED | allowing_security_access_is_an_error_not_a_silent_no_op, security_access_is_refused_under_every_policy_that_can_be_built |
+| M02 | `crates/obd-policy/src/policy.rs` | KILLED | allowing_security_access_is_an_error_not_a_silent_no_op, lab_file_keeps_security_access_on_the_hard_floor, security_access_is_refused_under_every_policy_that_can_be_built |
 | M03 | `crates/obd-policy/src/policy.rs` | KILLED | session_control_admits_only_default_and_extended_for_all_256_sub_functions |
 | M04 | `crates/obd-policy/src/policy.rs` | KILLED | deny_beats_allow |
 | M05 | `crates/obd-policy/src/audit.rs` | KILLED | audit_does_not_keep_the_body_of_a_state_changing_request |
@@ -46,3 +46,5 @@ Each row: the code was changed (`tools/break_check.py` holds the exact edit), th
 | M40 | `crates/fakeobd/src/lib.rs` | KILLED | close_is_idempotent_and_disconnects_the_receiver |
 | M41 | `crates/serial-bridge/src/lib.rs` | KILLED | a_relay_between_two_streams_refuses_what_the_policy_refuses |
 | M42 | `profiles/volt-lab.profile` | KILLED | trial_addresses_answer_the_requests_the_app_sent |
+| M43 | `profiles/lab-control.policy` | KILLED | lab_control_frames_are_denied_by_default_and_answered_by_the_lab_policy |
+| M44 | `crates/vehicle/src/ecu.rs` | KILLED | lab_control_frames_are_denied_by_default_and_answered_by_the_lab_policy |

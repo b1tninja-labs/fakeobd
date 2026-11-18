@@ -27,6 +27,12 @@ a feature that can be switched off by accident.
 - Deny beats allow; a service that is not allowed is denied; an unknown service is denied.
 - A configuration may allow more (a relay owner may decide to let `$2E` through to a bench module), except
   `$27`.
+- [`profiles/lab-control.policy`](../profiles/lab-control.policy) is a separate file. It keeps the read-only
+  preset, including tester present `$3E`, and admits the documented body-control frames on service `AE`.
+  The default policy does not admit those frames. The simulated ECU answers only those exact frames with
+  one acknowledgement (`EE`) and does not move a mechanism, open a serial port, a Bluetooth radio or an
+  ADB device, or change stored data. Any other `AE` payload keeps the negative response it already gets.
+  The file cannot allow `$27`. `$2E`, `$31` and `$34`-`$37` stay unimplemented.
 - Every request the policy sees, passed or refused, is written to the audit log. A refused request's body
   is not kept past the service, sub-function and one more byte, so a refused `$27` or `$2E` does not leave
   its key or payload in the log.

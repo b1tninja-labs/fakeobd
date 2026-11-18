@@ -1,6 +1,6 @@
 use isotp::{decode, segment, CanFrame, FlowControl, FlowStatus, Pdu, Reassembler, Rx};
-use obd_policy::{AuditLog, Policy};
-use vehicle::{Bus, BusError, FaultPlan, Timed, VehicleSpec};
+use obd_policy::{AuditLog, Policy, Reason, Verdict};
+use vehicle::{Bus, BusError, FaultPlan, Timed, VehicleSpec, LAB_CONTROL_ACK};
 
 fn bus() -> Bus {
     Bus::new(
@@ -318,6 +318,127 @@ fn every_state_changing_request_is_refused_and_audited_and_changes_nothing() {
         .entries()
         .filter(|e| e.sid == Some(0x27))
         .all(|e| e.reason == Some("hard-floor")));
+}
+
+const LAB_POLICY: &str = include_str!("../../../profiles/lab-control.policy");
+
+fn lab_frames() -> Vec<Vec<u8>> {
+    LAB_POLICY
+        .lines()
+        .filter_map(|raw| {
+            let line = raw.split('#').next().unwrap_or("").trim();
+            let mut it = line.split_whitespace();
+            if it.next() != Some("allow-pdu") {
+                return None;
+            }
+            let hex = it.next().expect("allow-pdu has a request");
+            Some(
+                (0..hex.len() / 2)
+                    .map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).unwrap())
+                    .collect(),
+            )
+        })
+        .collect()
+}
+
+fn lab_bus() -> Bus {
+    Bus::new(
+        &VehicleSpec::default_vehicle(),
+        Policy::parse(LAB_POLICY).expect("lab policy parses"),
+        AuditLog::new(64),
+    )
+}
+
+/// Windows and the door fallback are module 40 (`241`). Charge-port frames are module CB (`7E4`).
+fn control_id(pdu: &[u8]) -> u32 {
+    if pdu.len() >= 2 && pdu[0] == 0xAE && pdu[1] == 0x47 {
+        0x7E4
+    } else {
+        0x241
+    }
+}
+
+#[test]
+fn lab_control_frames_are_denied_by_default_and_answered_by_the_lab_policy() {
+    let window = [0xAE, 0x3B, 0xFF, 0x01, 0x01, 0x01, 0x01];
+    let door = [0xAE, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00];
+    let port = [0xAE, 0x47, 0x02, 0x02, 0x00, 0x00, 0x00];
+    let named = [&window[..], &door[..], &port[..]];
+    let mut plain = bus();
+    for pdu in named {
+        assert_eq!(
+            plain.policy().evaluate(pdu).verdict,
+            Verdict::Deny(Reason::NotAllowlisted),
+            "{pdu:02X?}"
+        );
+        assert_eq!(
+            one(request(&mut plain, control_id(pdu), pdu)),
+            [0x7F, 0xAE, 0x33],
+            "{pdu:02X?}"
+        );
+    }
+
+    let mut lab = lab_bus();
+    let before = one(request(&mut lab, 0x241, &[0x22, 0x80, 0x90]));
+    assert!(lab.policy().evaluate(&[0x3E, 0x00]).allowed());
+    assert_eq!(one(request(&mut lab, 0x241, &[0x3E, 0x00])), [0x7E, 0x00]);
+    for pdu in lab_frames() {
+        assert!(lab.policy().evaluate(&pdu).allowed(), "{pdu:02X?}");
+        assert_eq!(
+            one(request(&mut lab, control_id(&pdu), &pdu)),
+            LAB_CONTROL_ACK,
+            "{pdu:02X?}"
+        );
+        assert_eq!(LAB_CONTROL_ACK, [0xEE]);
+    }
+    for pdu in named {
+        assert_eq!(
+            one(request(&mut lab, control_id(pdu), pdu)),
+            [0xEE],
+            "{pdu:02X?}"
+        );
+    }
+    assert_eq!(one(request(&mut lab, 0x241, &[0x22, 0x80, 0x90])), before);
+
+    let unknown = [0xAE, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80];
+    assert_eq!(
+        lab.policy().evaluate(&unknown).verdict,
+        Verdict::Deny(Reason::NotAllowlisted)
+    );
+    assert_eq!(one(request(&mut lab, 0x241, &unknown)), [0x7F, 0xAE, 0x33]);
+    assert_eq!(
+        lab.policy().evaluate(&[0x27, 0x01]).verdict,
+        Verdict::Deny(Reason::HardFloor)
+    );
+    assert_eq!(
+        one(request(&mut lab, 0x241, &[0x27, 0x01])),
+        [0x7F, 0x27, 0x33]
+    );
+    assert!(lab
+        .audit()
+        .entries()
+        .filter(|e| e.sid == Some(0x27))
+        .all(|e| e.reason == Some("hard-floor")));
+    for pdu in [
+        &[0x2E, 0xD2, 0x1B, 0x00][..],
+        &[0x31, 0x01, 0x00, 0x00][..],
+        &[0x34, 0x00][..],
+        &[0x35, 0x00][..],
+        &[0x36, 0x00][..],
+        &[0x37, 0x00][..],
+    ] {
+        assert!(!lab.policy().evaluate(pdu).allowed(), "{pdu:02X?}");
+        assert_eq!(one(request(&mut lab, 0x241, pdu))[0], 0x7F);
+    }
+
+    // A configuration that allows the service still gets the existing negative for an unknown payload.
+    let wide = Policy::parse("allow AE").unwrap();
+    let mut wide_bus = Bus::new(&VehicleSpec::default_vehicle(), wide, AuditLog::new(8));
+    assert_eq!(one(request(&mut wide_bus, 0x241, &window)), [0xEE]);
+    assert_eq!(
+        one(request(&mut wide_bus, 0x241, &unknown)),
+        [0x7F, 0xAE, 0x11]
+    );
 }
 
 #[test]

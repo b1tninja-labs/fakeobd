@@ -14,7 +14,7 @@
 
 | Crate | Role | Depends on |
 |---|---|---|
-| `obd-policy` | allow/deny rules, hard floor, audit log, ELM line classifier. No I/O, no CAN. | nothing |
+| `obd-policy` | allow/deny rules, exact-request allows, hard floor, audit log, ELM line classifier. No I/O, no CAN. | nothing |
 | `isotp` | ISO-TP framing, segmentation, reassembly, flow control, STmin. | nothing |
 | `vehicle` | profile parser, ECUs, bus with virtual time, fault injection. | `isotp`, `obd-policy` |
 | `elm` | the adapter: command state, ISO-TP tester side, receive filter, output formatting. | `isotp`, `vehicle`, `obd-policy` |

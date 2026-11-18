@@ -103,6 +103,11 @@ MUTATIONS: list[tuple[str, str, str, str, list[str]]] = [
      ["--manifest-path", "crates/serial-bridge/Cargo.toml", "a_relay_between"]),
     ("M42", "profiles/volt-lab.profile", "ecu M241 req=241 resp=641", "ecu M241 req=242 resp=642",
      ["-p", "vehicle", "--test", "bus", "trial_addresses_answer"]),
+    ("M43", "profiles/lab-control.policy", "allow-pdu AE3BFF01010101", "allow-pdu AE3BFF01010100",
+     ["-p", "vehicle", "--test", "bus", "lab_control_frames_are_denied_by_default"]),
+    ("M44", "crates/vehicle/src/ecu.rs", "pub const LAB_CONTROL_ACK: [u8; 1] = [0xEE];",
+     "pub const LAB_CONTROL_ACK: [u8; 1] = [0xEF];",
+     ["-p", "vehicle", "--test", "bus", "lab_control_frames_are_denied_by_default"]),
 ]
 
 
