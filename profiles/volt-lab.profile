@@ -12,10 +12,11 @@
 # The app reads `$1A 90` on 7E4 first and stays on "Scan was not successful" when that string does not
 # decode to a model year. `$1A` 99, CB, CC, DF, B0, 6F and 6D are synthetic tags on the headers the
 # 2026-11-14 scan used, so that scan is not refused before it reaches `$22`.
-# Nothing here decodes a `42xx` value. Calibration IDs and Mode 06 entries are synthetic. Lengths
-# other than the demo values and the 44-byte 83E1 block are not recorded; those `$22` reads answer
-# two synthetic bytes. The added ECUs are not functional: 7DF mode 01 stays HPCM2 and BECM, which is
-# what the golden transcripts record. Do not read vehicle facts out of this file.
+# The BECM comments name the Voltage 2.3.0 scale for the reads that decoder assigns.
+# `$1A DF` is the odometer request: four bytes, big-endian, divided by 64. The bytes stay the
+# scan tag, because the tests lock them. Calibration IDs and Mode 06 entries are synthetic.
+# The added ECUs are not functional: 7DF mode 01 stays HPCM2 and BECM, which is what the golden
+# transcripts record. Do not read vehicle facts out of this file.
 
 s3 5000
 
@@ -30,7 +31,7 @@ lid 90 ascii 1G1RB6S55HU000000   # $1A 90. The app's Demo vehicle literal, not a
 lid 99 ascii SY99
 lid CC ascii SYCC
 lid CB ascii SYCB
-lid DF ascii SYNTH1ADF0000001
+lid DF ascii SYNTH1ADF0000001    # scan tag, not a mileage. 1A DF is four bytes, big-endian, divided by 64. These bytes stay the tag the tests lock
 lid B0 ascii SYB0
 lid 6F ascii SY6F
 lid 6D ascii SY6D
@@ -74,8 +75,8 @@ did 4212 0E11
 # Demo bytes stay where the demo log has them: 41AD, 41C6, 43AF. 4368 is one byte, as on the cluster.
 # 41C5 is four bytes because that parser reads four. The other lengths were not recorded.
 did 40E9 0190                   # internal resistance, milliohms: uint16 / 2. 0190 is 200
-did 41A3 01C2                   # battery capacity, Ah: uint16 / 10. 01C2 is 45.0. Replaces 45FF when both answer
-did 41A6 0000                   # two data bytes as an integer, divided by 64
+did 41A3 01C2                   # battery capacity, Ah: uint16 / 10. 01C2 is 45.0. Factory percent is that divided by the model nominal. The Demo literal, 4th character R and year code H, selects 51.8 Ah, so this is 86.9%
+did 41A6 1018                   # EV range, km: uint16 / 64. Miles are that times 0.62137119 when the unit is not km. 1018 is 64.375 km, 40.0 mi
 did 41AD 0000                   # liters used: uint16 * 0.125. Demo bytes stay 0000
 did 41C5 00000280               # EV trip: four bytes as an integer, divided by 64. 00000280 is 10.0
 did 41C6 00000000               # ICE trip: four bytes as an integer, divided by 64. Demo bytes stay 0
