@@ -131,7 +131,105 @@ lid 6F ascii SY6F
 lid 6D ascii SY6D
 
 ecu M7E7 req=7E7 resp=7EF functional=no pad=00 latency=4
-did 4181 0000
+# Synthetic lab cell table: 4181-419F then 4200-4240. Value is B000 + index*0020,
+# so (uint16 * 5) / 65535 stays above 0. The live Cells tab drops a non-positive reply.
+# 41A0-41FF are not in the table.
+did 4181 B000
+did 4182 B020
+did 4183 B040
+did 4184 B060
+did 4185 B080
+did 4186 B0A0
+did 4187 B0C0
+did 4188 B0E0
+did 4189 B100
+did 418A B120
+did 418B B140
+did 418C B160
+did 418D B180
+did 418E B1A0
+did 418F B1C0
+did 4190 B1E0
+did 4191 B200
+did 4192 B220
+did 4193 B240
+did 4194 B260
+did 4195 B280
+did 4196 B2A0
+did 4197 B2C0
+did 4198 B2E0
+did 4199 B300
+did 419A B320
+did 419B B340
+did 419C B360
+did 419D B380
+did 419E B3A0
+did 419F B3C0
+did 4200 B3E0
+did 4201 B400
+did 4202 B420
+did 4203 B440
+did 4204 B460
+did 4205 B480
+did 4206 B4A0
+did 4207 B4C0
+did 4208 B4E0
+did 4209 B500
+did 420A B520
+did 420B B540
+did 420C B560
+did 420D B580
+did 420E B5A0
+did 420F B5C0
+did 4210 B5E0
+did 4211 B600
+did 4212 B620
+did 4213 B640
+did 4214 B660
+did 4215 B680
+did 4216 B6A0
+did 4217 B6C0
+did 4218 B6E0
+did 4219 B700
+did 421A B720
+did 421B B740
+did 421C B760
+did 421D B780
+did 421E B7A0
+did 421F B7C0
+did 4220 B7E0
+did 4221 B800
+did 4222 B820
+did 4223 B840
+did 4224 B860
+did 4225 B880
+did 4226 B8A0
+did 4227 B8C0
+did 4228 B8E0
+did 4229 B900
+did 422A B920
+did 422B B940
+did 422C B960
+did 422D B980
+did 422E B9A0
+did 422F B9C0
+did 4230 B9E0
+did 4231 BA00
+did 4232 BA20
+did 4233 BA40
+did 4234 BA60
+did 4235 BA80
+did 4236 BAA0
+did 4237 BAC0
+did 4238 BAE0
+did 4239 BB00
+did 423A BB20
+did 423B BB40
+did 423C BB60
+did 423D BB80
+did 423E BBA0
+did 423F BBC0
+did 4240 BBE0
 lid 90 ascii SYNTH000000000FKE
 lid 99 ascii SY99
 lid CC ascii SYCC

@@ -659,10 +659,44 @@ fn trial_addresses_answer_the_requests_the_app_sent() {
     assert_eq!(m7e1.len(), 1);
     assert_eq!(m7e1[0].0, 0x7E9);
     assert_eq!(&m7e1[0].1[..3], [0x62, 0x28, 0x89]);
-    let m7e7 = request(&mut b, 0x7E7, &[0x22, 0x41, 0x81]);
-    assert_eq!(m7e7.len(), 1);
-    assert_eq!(m7e7[0].0, 0x7EF);
-    assert_eq!(&m7e7[0].1[..3], [0x62, 0x41, 0x81]);
+    for index in 0..96u16 {
+        let did = if index < 31 {
+            0x4181 + index
+        } else {
+            0x4200 + (index - 31)
+        };
+        let raw = 0xB000 + index * 0x20;
+        let got = request(&mut b, 0x7E7, &[0x22, (did >> 8) as u8, did as u8]);
+        assert_eq!(got.len(), 1, "{did:04X}");
+        assert_eq!(got[0].0, 0x7EF, "{did:04X}");
+        assert_eq!(
+            got[0].1,
+            [
+                0x62,
+                (did >> 8) as u8,
+                did as u8,
+                (raw >> 8) as u8,
+                raw as u8,
+            ],
+            "{did:04X}"
+        );
+    }
+    assert_eq!(
+        one(request(
+            &mut b,
+            0x7E7,
+            &[0x22, 0x41, 0x81, 0x41, 0x82, 0x41, 0x83]
+        )),
+        [0x62, 0x41, 0x81, 0xB0, 0x00, 0x41, 0x82, 0xB0, 0x20, 0x41, 0x83, 0xB0, 0x40,]
+    );
+    assert_eq!(
+        one(request(&mut b, 0x7E7, &[0x22, 0x41, 0xA0])),
+        [0x7F, 0x22, 0x31]
+    );
+    assert_eq!(
+        one(request(&mut b, 0x7E7, &[0x22, 0x42, 0x41])),
+        [0x7F, 0x22, 0x31]
+    );
     let scan_lids = [
         (0x90u8, &b"SYNTH000000000FKE"[..]),
         (0x99, b"SY99"),
