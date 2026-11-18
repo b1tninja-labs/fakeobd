@@ -52,11 +52,12 @@ Findings worth keeping:
 ## Follow-up in the profile
 
 The addresses and identifiers in the findings above are now in `profiles/volt-lab.profile`, with synthetic
-bytes. `$1A` `90`, `99`, `CC`, `DF`, `B0`, `6F` and `6D` are answered on `7E0`, `7E4`, `7E1`, `7E7`, `241`
-and `24C`. `90` is the placeholder `SYNTH000000000FKE`, not a VIN. `DF` is multi-frame. `99`, `CC`, `B0`, `6F`
-and `6D` are four-character single frames. `7DF` `$1A B0` is answered by HPCM2 and BECM, the two functional ECUs. No `42xx`
-value is decoded. `621` is still absent: the DID appendix lists `ATSH621` and no `ATCRA` pair. The added
-ECUs are not functional, so a `7DF` mode 01 broadcast is still only HPCM2 and BECM.
+bytes. `$1A` `90`, `99`, `CB`, `CC`, `DF`, `B0`, `6F` and `6D` are answered on `7E0`, `7E4`, `7E1`, `7E7`,
+`241` and `24C`. `90` is the Voltage app's Demo vehicle literal, the same string on every ECU and on mode 09
+PID 02. `DF` is multi-frame. `99`, `CB`, `CC`, `B0`, `6F` and `6D` are four-character single frames. `7DF`
+`$1A B0` is answered by HPCM2 and BECM, the two functional ECUs. No `42xx` value is decoded. `621` is still
+absent: the DID appendix lists `ATSH621` and no `ATCRA` pair. The added ECUs are not functional, so a `7DF`
+mode 01 broadcast is still only HPCM2 and BECM.
 
 ## Not verified
 
@@ -86,9 +87,11 @@ profile's VIN placeholders replaced by a real-shaped VIN on both paths the app r
   it asks -- confirmed twice in the audit (`seq 1` and again at `seq 34`). It did **not** use mode `09` PID
   `02`, which was probed only by the host-side test client, not by the app. So a profile that answers `$1A 90`
   on `7E4` is sufficient; the earlier trial's failure to reach a data screen is explained by that one refusal.
-- **Corollary for the profile.** Because `7E4` is answered first, the VIN must be correct *there*; a profile
-  that puts it only on `7E0` will still look VIN-less to the app. The shipped placeholder is retained on every
-  ECU so a scan is never a refusal.
+- **Corollary for the profile.** Because `7E4` is answered first, the identity string has to be one the
+  app can decode *there*; a profile that puts it only on `7E0` still looks unidentified. The shipped profile
+  now answers `$1A 90` on every ECU, and mode 09 PID 02, with the app's own Demo vehicle literal
+  (`1G1RB6S55HU000000`, year 17, model text Volt in volt `docs/OBD-CONFIG.md`). A later handshake also asks
+  `$1A CB`, which the 2026-11-14 table did not list; that identifier is answered with the synthetic tag `SYCB`.
 
 Still not verified: whether a data screen plus a real VIN triggers the app's backend entitlement call (it did
 not here -- see volt `docs/OBD-CONFIG.md`, "Re-tested on a fresh AVD"); and anything about a real adapter,

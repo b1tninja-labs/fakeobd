@@ -17,8 +17,9 @@ a feature that can be switched off by accident.
 4. **No real adapters, vehicles or phones from the tests or the examples.** The client and capture tools
    connect to loopback only unless told otherwise, and nothing in the repository opens a serial port,
    a Bluetooth device or an ADB connection.
-5. **No VINs, Bluetooth addresses, serial numbers or personal paths** in the tree. The VIN-like string in
-   the shipped profile is a placeholder that is not a valid VIN.
+5. **No captured VINs, Bluetooth addresses, serial numbers or personal paths** in the tree. `$1A 90`
+   and mode 09 PID 02 answer with the Voltage app's own Demo vehicle literal. That string is not a
+   vehicle this repository captured.
 
 ## What the policy does
 

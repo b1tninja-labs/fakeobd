@@ -7,9 +7,11 @@
 # The 2026-11-14 trial (docs/AVD-TRIAL.md) records which header the app used for which identifier.
 # The appendix pairs 241 -> 641 and 24C -> 64C. It lists ATSH621 and no ATCRA pair, so 621 is absent.
 #
-# What is not: a vehicle capture of which module owns a DID, every value below, or a real VIN.
-# `$1A 90` repeats the placeholder SYNTH000000000FKE. `$1A` 99, CC, DF, B0, 6F and 6D are synthetic
-# tags on the headers the 2026-11-14 scan used, so that scan is not refused before it reaches `$22`.
+# What is not: a vehicle capture of which module owns a DID, every value below, or a captured VIN.
+# `$1A 90` and mode 09 PID 02 are the Voltage app's own Demo vehicle literal (volt docs/OBD-CONFIG.md).
+# The app reads `$1A 90` on 7E4 first and stays on "Scan was not successful" when that string does not
+# decode to a model year. `$1A` 99, CB, CC, DF, B0, 6F and 6D are synthetic tags on the headers the
+# 2026-11-14 scan used, so that scan is not refused before it reaches `$22`.
 # Nothing here decodes a `42xx` value. Calibration IDs and Mode 06 entries are synthetic. Lengths
 # other than the demo values and the 44-byte 83E1 block are not recorded; those `$22` reads answer
 # two synthetic bytes. The added ECUs are not functional: 7DF mode 01 stays HPCM2 and BECM, which is
@@ -24,15 +26,16 @@ pid 0D 00                       # vehicle speed
 pid 11 40                       # throttle position
 pid 42 3390                     # control module voltage
 freeze 05 5A
-lid 90 ascii SYNTH000000000FKE   # $1A 90. Placeholder, 17 characters, not a VIN.
+lid 90 ascii 1G1RB6S55HU000000   # $1A 90. The app's Demo vehicle literal, not a captured VIN.
 lid 99 ascii SY99
 lid CC ascii SYCC
+lid CB ascii SYCB
 lid DF ascii SYNTH1ADF0000001
 lid B0 ascii SYB0
 lid 6F ascii SY6F
 lid 6D ascii SY6D
 freeze 0C 1AF8
-info 02 ascii SYNTH000000000FKE # placeholder, 17 characters, not a VIN
+info 02 ascii 1G1RB6S55HU000000 # same Demo literal as $1A 90, so the two identity reads agree
 info 04 hex 01 53 49 4D 43 41 4C 30 30 30 30 30 30 30 30 30 31  # one calibration ID, 16 ASCII bytes
 info 0A hex 01 48 50 43 4D 32 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 # ECU name HPCM2, 20 bytes
 mode06 A1 hex 01 0A 0010 0000 00FF 02 0A 0030 0000 00FF
@@ -55,9 +58,10 @@ ecu BECM req=7E4 resp=7EC functional=yes pad=00 latency=4
 pid 42 3390
 pid 5B 8C                       # hybrid battery pack remaining life, synthetic
 info 0A hex 01 42 45 43 4D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-lid 90 ascii SYNTH000000000FKE   # the app asks 7E4 for $1A 90 first; same placeholder, not a VIN
+lid 90 ascii 1G1RB6S55HU000000   # the app asks 7E4 for $1A 90 first; same Demo literal
 lid 99 ascii SY99
 lid CC ascii SYCC
+lid CB ascii SYCB
 lid DF ascii SYNTH1ADF0000001
 lid B0 ascii SYB0
 lid 6F ascii SY6F
@@ -97,9 +101,10 @@ did 4368 12
 # not say which module they are. functional=no, so they do not join the 7DF mode 01 broadcast.
 
 ecu M241 req=241 resp=641 functional=no pad=00 latency=5
-lid 90 ascii SYNTH000000000FKE   # second $1A 90, after ATCRA641; same placeholder, not a VIN
+lid 90 ascii 1G1RB6S55HU000000   # second $1A 90, after ATCRA641; same Demo literal
 lid 99 ascii SY99
 lid CC ascii SYCC
+lid CB ascii SYCB
 lid DF ascii SYNTH1ADF0000001    # the app sets ATFCSD300014 before this read, so the answer is multi-frame
 lid B0 ascii SYB0
 lid 6F ascii SY6F
@@ -112,9 +117,10 @@ did CB31 0000
 
 ecu M24C req=24C resp=64C functional=no pad=00 latency=5
 # No $1A identifier was recorded on this header. The same synthetic set is here so a scan is not a refusal.
-lid 90 ascii SYNTH000000000FKE
+lid 90 ascii 1G1RB6S55HU000000
 lid 99 ascii SY99
 lid CC ascii SYCC
+lid CB ascii SYCB
 lid DF ascii SYNTH1ADF0000001
 lid B0 ascii SYB0
 lid 6F ascii SY6F
@@ -122,9 +128,10 @@ lid 6D ascii SY6D
 
 ecu M7E1 req=7E1 resp=7E9 functional=no pad=00 latency=4
 did 2889 0000                   # also asked on 621, which has no recorded response id
-lid 90 ascii SYNTH000000000FKE
+lid 90 ascii 1G1RB6S55HU000000
 lid 99 ascii SY99
 lid CC ascii SYCC
+lid CB ascii SYCB
 lid DF ascii SYNTH1ADF0000001
 lid B0 ascii SYB0
 lid 6F ascii SY6F
@@ -132,9 +139,10 @@ lid 6D ascii SY6D
 
 ecu M7E7 req=7E7 resp=7EF functional=no pad=00 latency=4
 did 4181 0000
-lid 90 ascii SYNTH000000000FKE
+lid 90 ascii 1G1RB6S55HU000000
 lid 99 ascii SY99
 lid CC ascii SYCC
+lid CB ascii SYCB
 lid DF ascii SYNTH1ADF0000001
 lid B0 ascii SYB0
 lid 6F ascii SY6F

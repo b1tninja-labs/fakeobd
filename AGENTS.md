@@ -26,8 +26,8 @@ must pass before a change is done.
 - Never open a serial port, Bluetooth device or ADB connection from code or tests. The TCP client connects to
   loopback unless `--allow-remote`. The physical phone and any real adapter or vehicle are out of bounds; the
   emulator is `emulator-5554` and every `adb` call carries `-s emulator-5554`.
-- No VINs, Bluetooth addresses, serial numbers or personal paths in the tree. The VIN-like string in the
-  profile is a placeholder.
+- No captured VINs, Bluetooth addresses, serial numbers or personal paths in the tree. `$1A 90` in the
+  profile is the Voltage app's own Demo vehicle literal, not a vehicle this repository captured.
 
 ## Invariants
 

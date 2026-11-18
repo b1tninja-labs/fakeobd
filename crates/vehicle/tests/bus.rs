@@ -127,7 +127,7 @@ fn mode_09_vin_is_multi_frame_and_needs_flow_control() {
     let mut b = bus();
     let r = one(request(&mut b, 0x7E0, &[0x09, 0x02]));
     assert_eq!(&r[..3], [0x49, 0x02, 0x01]);
-    assert_eq!(&r[3..], b"SYNTH000000000FKE");
+    assert_eq!(&r[3..], b"1G1RB6S55HU000000");
 }
 
 #[test]
@@ -453,7 +453,7 @@ fn gmlan_read_data_by_identifier_answers_from_the_lid_table() {
     let mut b = bus();
     let r = one(request(&mut b, 0x7E0, &[0x1A, 0x90]));
     assert_eq!(&r[..2], [0x5A, 0x90]);
-    assert_eq!(&r[2..], b"SYNTH000000000FKE");
+    assert_eq!(&r[2..], b"1G1RB6S55HU000000");
     let r99 = one(request(&mut b, 0x7E0, &[0x1A, 0x99]));
     assert_eq!(&r99[..2], [0x5A, 0x99]);
     assert_eq!(&r99[2..], b"SY99");
@@ -464,7 +464,7 @@ fn gmlan_read_data_by_identifier_answers_from_the_lid_table() {
     let becm = one(request(&mut b, 0x7E4, &[0x1A, 0x90]));
     assert_eq!(
         &becm[2..],
-        b"SYNTH000000000FKE",
+        b"1G1RB6S55HU000000",
         "the app asks BECM for $1A 90 first"
     );
     assert_eq!(one(request(&mut b, 0x7E0, &[0x1A])), [0x7F, 0x1A, 0x13]);
@@ -491,7 +491,7 @@ fn a_physical_only_ecu_ignores_the_functional_id() {
 #[test]
 fn trial_addresses_answer_the_requests_the_app_sent() {
     let mut b = bus();
-    let vin = b"SYNTH000000000FKE";
+    let vin = b"1G1RB6S55HU000000";
 
     let becm = request(&mut b, 0x7E4, &[0x1A, 0x90]);
     assert_eq!(becm.len(), 1);
@@ -543,9 +543,10 @@ fn trial_addresses_answer_the_requests_the_app_sent() {
     assert_eq!(m7e7[0].0, 0x7EF);
     assert_eq!(&m7e7[0].1[..3], [0x62, 0x41, 0x81]);
     let scan_lids = [
-        (0x90u8, &b"SYNTH000000000FKE"[..]),
+        (0x90u8, &b"1G1RB6S55HU000000"[..]),
         (0x99, b"SY99"),
         (0xCC, b"SYCC"),
+        (0xCB, b"SYCB"),
         (0xDF, b"SYNTH1ADF0000001"),
         (0xB0, b"SYB0"),
         (0x6F, b"SY6F"),

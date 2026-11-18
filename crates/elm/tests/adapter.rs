@@ -114,12 +114,12 @@ fn multi_frame_response_prints_a_length_line_and_numbered_rows_without_headers()
     tx(&mut e, "ATSH7E0");
     assert_eq!(
         tx(&mut e, "0902"),
-        "014\r0: 49 02 01 53 59 4E \r1: 54 48 30 30 30 30 30 \r2: 30 30 30 30 46 4B 45 \r\r>"
+        "014\r0: 49 02 01 31 47 31 \r1: 52 42 36 53 35 35 48 \r2: 55 30 30 30 30 30 30 \r\r>"
     );
     tx(&mut e, "ATS0");
     assert_eq!(
         tx(&mut e, "0902"),
-        "014\r0:4902015359 4E\r1:54483030303030\r2:30303030464B45\r\r>".replace(' ', "")
+        "014\r0:490201314731\r1:52423653353548\r2:55303030303030\r\r>".replace(' ', "")
     );
 }
 
@@ -130,7 +130,7 @@ fn multi_frame_response_with_headers_lists_every_raw_frame() {
     tx(&mut e, "ATH1");
     assert_eq!(
         tx(&mut e, "0902"),
-        "7E8 10 14 49 02 01 53 59 4E \r7E8 21 54 48 30 30 30 30 30 \r7E8 22 30 30 30 30 46 4B 45 \r\r>"
+        "7E8 10 14 49 02 01 31 47 31 \r7E8 21 52 42 36 53 35 35 48 \r7E8 22 55 30 30 30 30 30 30 \r\r>"
     );
 }
 
@@ -364,7 +364,7 @@ fn flow_control_data_from_atfcsd_is_what_the_ecu_sees() {
     // a block size of 1 means the adapter must send a flow control after every frame; the answer is whole
     assert_eq!(tx(&mut e, "ATFCSD300100"), "OK\r\r>");
     assert!(tx(&mut e, "0902").starts_with(
-        "014\r0: 49 02 01 53 59 4E \r1: 54 48 30 30 30 30 30 \r2: 30 30 30 30 46 4B 45 "
+        "014\r0: 49 02 01 31 47 31 \r1: 52 42 36 53 35 35 48 \r2: 55 30 30 30 30 30 30 "
     ));
 }
 
