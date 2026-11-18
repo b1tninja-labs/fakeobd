@@ -463,3 +463,63 @@ fn stn_flow_control_pairs_choose_the_flow_control_address() {
     // functional request, one responder passes the filter, flow control goes to 7E0 by pair
     assert!(tx(&mut e, "0902").starts_with("014\r"));
 }
+
+#[test]
+fn stn_single_wire_can_presets_answer_and_elm327_does_not() {
+    let mut plain = quiet();
+    assert_eq!(tx(&mut plain, "STP63"), "?\r\r>");
+    assert_eq!(tx(&mut plain, "STP62"), "?\r\r>");
+    assert_eq!(tx(&mut plain, "STCSWM2"), "?\r\r>");
+
+    let mut e = elm(Flavor::Stn);
+    tx(&mut e, "ATE0");
+    tx(&mut e, "ATL0");
+    assert_eq!(tx(&mut e, "STP63"), "OK\r\r>");
+    assert_eq!(tx(&mut e, "ATDPN"), "63\r\r>");
+    assert_eq!(
+        tx(&mut e, "ATDP"),
+        "ISO 15765, 11-bit Tx, 33.3kbps, DLC=8\r\r>"
+    );
+    assert_eq!(tx(&mut e, "STPR"), "63\r\r>");
+    assert_eq!(
+        tx(&mut e, "STPRS"),
+        "ISO 15765, 11-bit Tx, 33.3kbps, DLC=8\r\r>"
+    );
+    assert_eq!(tx(&mut e, "STI"), "STN2230 vSIM\r\r>");
+    tx(&mut e, "ATSH7E0");
+    assert_eq!(
+        tx(&mut e, "0100"),
+        "NO DATA\r\r>",
+        "preset 63 is not the HS-CAN bus"
+    );
+
+    assert_eq!(tx(&mut e, "STP62"), "OK\r\r>");
+    assert_eq!(tx(&mut e, "ATDPN"), "62\r\r>");
+    assert_eq!(
+        tx(&mut e, "ATDP"),
+        "ISO 11898, 29-bit Tx, 33.3kbps, var DLC\r\r>"
+    );
+    assert_eq!(tx(&mut e, "ATSH1024E097"), "OK\r\r>");
+    assert_eq!(tx(&mut e, "0001FF"), "NO DATA\r\r>");
+    assert_eq!(tx(&mut e, "0000FF"), "NO DATA\r\r>");
+    assert_eq!(tx(&mut e, "0003FF"), "NO DATA\r\r>");
+    assert_eq!(tx(&mut e, "001122334455667788"), "?\r\r>");
+
+    for mode in ["STCSWM0", "STCSWM1", "STCSWM2", "STCSWM3", "STCSWM5"] {
+        assert_eq!(tx(&mut e, mode), "OK\r\r>", "{mode}");
+    }
+    assert_eq!(tx(&mut e, "STCSWM4"), "?\r\r>");
+
+    assert_eq!(tx(&mut e, "STP61"), "OK\r\r>");
+    assert_eq!(tx(&mut e, "ATDPN"), "61\r\r>");
+    assert_eq!(tx(&mut e, "STP64"), "OK\r\r>");
+    assert_eq!(
+        tx(&mut e, "STPRS"),
+        "ISO 15765, 29-bit Tx, 33.3kbps, DLC=8\r\r>"
+    );
+
+    assert_eq!(tx(&mut e, "ATSP6"), "OK\r\r>");
+    assert_eq!(tx(&mut e, "ATDP"), "ISO 15765-4 (CAN 11/500)\r\r>");
+    tx(&mut e, "ATSH7E0");
+    assert_eq!(tx(&mut e, "0105"), "41 05 5A\r\r>");
+}

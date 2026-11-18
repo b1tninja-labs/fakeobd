@@ -82,6 +82,49 @@ pub(crate) struct State {
     pub fc_header: Option<u32>,
     pub fc_data: Option<Vec<u8>>,
     pub stn_pairs: Vec<(u32, u32)>,
+    /// `STP61`–`STP64` on an STN adapter. `None` means the ELM protocol number is in force.
+    pub sw_preset: Option<SwPreset>,
+}
+
+/// One single-wire CAN preset from the OBDLink FRPM `STP` table (section 8.6).
+///
+/// `61` and `62` are ISO 11898 with a variable data length; `63` and `64` are ISO 15765 with
+/// DLC 8. The `ext` flag is the 29-bit transmit id (`62` and `64`). ISO 11898 itself was not
+/// read. Nothing in this simulator implements a module on that wire.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SwPreset {
+    Raw { ext: bool },
+    IsoTp { ext: bool },
+}
+
+impl SwPreset {
+    fn from_code(code: u8) -> Option<Self> {
+        Some(match code {
+            0x61 => Self::Raw { ext: false },
+            0x62 => Self::Raw { ext: true },
+            0x63 => Self::IsoTp { ext: false },
+            0x64 => Self::IsoTp { ext: true },
+            _ => return None,
+        })
+    }
+
+    fn code(self) -> u8 {
+        match self {
+            Self::Raw { ext: false } => 0x61,
+            Self::Raw { ext: true } => 0x62,
+            Self::IsoTp { ext: false } => 0x63,
+            Self::IsoTp { ext: true } => 0x64,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self.code() {
+            0x61 => "ISO 11898, 11-bit Tx, 33.3kbps, var DLC",
+            0x62 => "ISO 11898, 29-bit Tx, 33.3kbps, var DLC",
+            0x63 => "ISO 15765, 11-bit Tx, 33.3kbps, DLC=8",
+            _ => "ISO 15765, 29-bit Tx, 33.3kbps, DLC=8",
+        }
+    }
 }
 
 impl State {
@@ -102,6 +145,7 @@ impl State {
             fc_header: None,
             fc_data: None,
             stn_pairs: Vec::new(),
+            sw_preset: None,
         }
     }
 
@@ -350,6 +394,7 @@ impl Elm {
                 }
                 _ => return None,
             };
+            self.st.sw_preset = None;
             self.st.auto_found = None;
             return ok();
         }
@@ -424,12 +469,34 @@ impl Elm {
             self.st.stn_pairs.push((header(tx)?, header(rx)?));
             return one("OK");
         }
+        if let Some(v) = c.strip_prefix("CSWM") {
+            // FRPM `STCSWM`: the mode table lists 0, 1, 2, 3 and 5. The prose calls the field a
+            // 3-bit number "0 to 8"; modes that are not in the table are `?`.
+            let mode = u8::from_str_radix(v, 16).ok().filter(|_| v.len() == 1)?;
+            if !matches!(mode, 0 | 1 | 2 | 3 | 5) {
+                return None;
+            }
+            return one("OK");
+        }
+        if c == "PR" {
+            return self.st.sw_preset.map(|p| vec![format!("{:02X}", p.code())]);
+        }
+        if c == "PRS" {
+            return self.st.sw_preset.map(|p| vec![p.name().to_string()]);
+        }
         if let Some(v) = c.strip_prefix('P') {
             if !v.is_empty() && v.chars().all(|c| c.is_ascii_hexdigit()) && !c.starts_with("PBR") {
-                // A one-digit STN protocol number is the same as ATSP; longer forms (the Voltage app
-                // sends "STP63") are acknowledged without effect. Unknown semantics, see the gaps doc.
+                // One digit is the ELM protocol number (`STP 6` is `ATSP6`). Two digits: 61–64
+                // select single-wire CAN. Any other length is acknowledged and does not change
+                // the protocol (G-ST-ACK).
                 return if v.len() == 1 {
                     self.at(&format!("SP{v}"))
+                } else if v.len() == 2 {
+                    if let Some(preset) = SwPreset::from_code(u8::from_str_radix(v, 16).ok()?) {
+                        self.st.sw_preset = Some(preset);
+                        self.st.auto_found = None;
+                    }
+                    Some(vec!["OK".to_string()])
                 } else {
                     Some(vec!["OK".to_string()])
                 };
@@ -446,6 +513,9 @@ impl Elm {
     }
 
     fn protocol_number(&self) -> String {
+        if let Some(p) = self.st.sw_preset {
+            return format!("{:02X}", p.code());
+        }
         let p = self.st.auto_found.unwrap_or(self.st.protocol);
         if self.st.protocol == 0 {
             format!("A{:X}", p)
@@ -455,6 +525,9 @@ impl Elm {
     }
 
     fn protocol_name(&self) -> String {
+        if let Some(p) = self.st.sw_preset {
+            return p.name().to_string();
+        }
         const NAMES: [&str; 13] = [
             "AUTO",
             "SAE J1850 PWM",
@@ -490,6 +563,14 @@ impl Elm {
         let Some(bytes) = hex_bytes(body).filter(|b| !b.is_empty()) else {
             return (vec!["?".into()], 0);
         };
+        if self.st.sw_preset.is_some() {
+            // The preset is open. No single-wire module is simulated, and door, window and trunk
+            // payloads are not implemented, so the bytes are not given to an ECU.
+            if bytes.len() > 8 {
+                return (vec!["?".into()], 0);
+            }
+            return (vec!["NO DATA".into()], 0);
+        }
         let auto_search = self.st.protocol == 0 && self.st.auto_found.is_none();
         let proto = if self.st.protocol == 0 {
             6

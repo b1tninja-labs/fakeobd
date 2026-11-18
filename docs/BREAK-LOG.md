@@ -46,3 +46,4 @@ Each row: the code was changed (`tools/break_check.py` holds the exact edit), th
 | M40 | `crates/fakeobd/src/lib.rs` | KILLED | close_is_idempotent_and_disconnects_the_receiver |
 | M41 | `crates/serial-bridge/src/lib.rs` | KILLED | a_relay_between_two_streams_refuses_what_the_policy_refuses |
 | M42 | `profiles/volt-lab.profile` | KILLED | trial_addresses_answer_the_requests_the_app_sent |
+| M43 | `crates/elm/src/lib.rs` | KILLED | stn_single_wire_can_presets_answer_and_elm327_does_not |

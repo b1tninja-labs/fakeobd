@@ -103,6 +103,9 @@ MUTATIONS: list[tuple[str, str, str, str, list[str]]] = [
      ["--manifest-path", "crates/serial-bridge/Cargo.toml", "a_relay_between"]),
     ("M42", "profiles/volt-lab.profile", "ecu M241 req=241 resp=641", "ecu M241 req=242 resp=642",
      ["-p", "vehicle", "--test", "bus", "trial_addresses_answer"]),
+    ("M43", "crates/elm/src/lib.rs", "0x63 => Self::IsoTp { ext: false },",
+     "0x63 => return None,",
+     ["-p", "elm", "--test", "adapter", "stn_single_wire_can_presets"]),
 ]
 
 

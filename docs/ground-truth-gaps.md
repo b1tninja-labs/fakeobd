@@ -108,8 +108,28 @@ strings are device specific.
 
 ### G-ST-ACK
 `STP`, `STCFCPA`, `STCFCPC` and the `STCSW`/`STSL`/`STBT` families are acknowledged with `OK`. `STCFCPA`
-pairs do choose the flow-control address; the rest have no effect. `STP63`, which the Voltage app sends,
-is acknowledged without knowing what protocol 63 means.
+pairs do choose the flow-control address. `STP61`–`STP64` select single-wire CAN (see G-SW-CAN). Any
+other multi-digit `STP` value is still acknowledged and does not change the protocol. `STCSWM` accepts
+only the modes in the FRPM table; other `STCSW` spellings stay acknowledgements with no effect.
+
+### G-SW-CAN
+`STP61`–`STP64` on the STN profile select the single-wire CAN presets in OBDLink FRPM §8.6 (read
+2026-11-18): 61 ISO 11898 11-bit 33.3 kbps variable DLC, 62 the 29-bit form of that, 63 ISO 15765 11-bit
+33.3 kbps DLC 8, 64 the 29-bit form of that. `STPR` / `STPRS` / `ATDP` / `ATDPN` report that preset.
+`STCSWM` accepts modes 0 (sleep), 1 (high speed, load off), 2 (high-voltage wakeup), 3 (normal) and 5
+(high speed, load on). The same page's prose says the field is a 3-bit number "0 to 8"; 4, 6 and 7 are
+not in the mode table, and the simulator answers `?` for them. The pin state is not modelled: nothing
+reports it back.
+
+A request on one of these presets is `NO DATA`. No single-wire module is simulated, and the door,
+window and trunk frames the Voltage app sends after `STP62` (`ATSH1024E097`, then `0001FF` / `0000FF`,
+`0003FF` / `0000FF`, and the other short payloads beside those) are not implemented. The bytes are not
+handed to an HS-CAN ECU. 33.3 kbps and pin 1 are not modelled. ISO 11898 was not read; the raw presets
+are taken from the FRPM table, not from that standard. ISO 15765-2:2016 was searched (`iso_search`) and
+the hits are about the transport, not these protocol numbers. ELM327DS v2.0 lists protocol B as USER1
+CAN (11-bit, 125 kbaud by default) and shows `ATPB C0 0F` as one way to try 11-bit CAN at 33.3 kbps.
+That is not `STP62`, and this simulator does not implement `ATPB`. An ELM327 profile still answers
+`STP` with `?`.
 
 ## Not annotated (no transcript entry pins it, or it is a default)
 
@@ -138,7 +158,7 @@ is acknowledged without knowing what protocol 63 means.
 | `ST...` commands | `?` | the known ones answer, others `?` |
 | Trailing space after data | yes | no |
 | `STCFCPA` flow-control pairs | `?` | applied |
-| `STP n` | `?` | one digit = `ATSP n`; longer acknowledged |
+| `STP n` | `?` | one digit = `ATSP n`; `61`–`64` select single-wire CAN; other lengths acknowledged |
 
 The Voltage app reacts to the difference: against `elm327` it sends `STP63` (answered `?`) and carries on;
 against `stn` it additionally runs a single-wire CAN probe (`STP61`, `STCSWM2`, wake frames on `ATSH100`
