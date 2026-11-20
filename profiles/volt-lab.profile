@@ -181,6 +181,28 @@ did 1154 4100                   # first byte - 40, synthetic
 did 1940 4100                   # first byte - 40, synthetic
 did 3040 01F4                   # uint16 / 10, then - 40, synthetic
 did 3041 01F4                   # uint16 / 10, then - 40, synthetic
+# The next i0 on this screen asks 7E1. The previous i0 ended on A0("17").
+did 000D 2800                   # speed: first byte 40
+did 000C 0C80                   # ICE rpm: uint16 / 4 = 800
+did 0005 5A00                   # coolant: first byte - 40 = 50 C
+# a0 and b0 are later in that same list, so this pass already selected module 17.
+did 43AF F800                   # same bytes as BECM
+did 8334 8000                   # first byte * 100 / 255
+did 41A6 1018                   # uint16 / 64
+did 24AC 0014                   # uint16 * 2, synthetic
+did 801F 6400                   # first byte / 2, then - 40, synthetic
+did 434F 4100                   # first byte - 40, synthetic
+did 41A4 4100                   # first byte - 40, synthetic
+did 435A 0400                   # first byte * 25, synthetic
+did 41B6 0100                   # uint16, synthetic
+did 439E 8000                   # first byte / 2.55, synthetic
+did 0042 03E8                   # uint16 / 1000, synthetic
+did 40D7 4100                   # first byte - 40, synthetic
+did 40D9 4100                   # first byte - 40, synthetic
+did 40DB 4100                   # first byte - 40, synthetic
+did 40DD 4100                   # first byte - 40, synthetic
+did 40DF 4100                   # first byte - 40, synthetic
+did 40E1 4100                   # first byte - 40, synthetic
 lid 90 ascii SYNTH000000000FKE
 lid 99 ascii SY99
 lid CC ascii SYCC
