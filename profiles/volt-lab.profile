@@ -11,9 +11,9 @@
 # `$1A 90` repeats the placeholder SYNTH000000000FKE. `$1A` 99, CC, DF, B0, 6F and 6D are synthetic
 # tags on the headers the 2026-11-14 scan used, so that scan is not refused before it reaches `$22`.
 # Nothing here decodes a `42xx` value. Calibration IDs and Mode 06 entries are synthetic. Lengths
-# other than the demo values and the 44-byte 83E1 block are not recorded; those `$22` reads answer
-# two synthetic bytes. The added ECUs are not functional: 7DF mode 01 stays HPCM2 and BECM, which is
-# what the golden transcripts record. Do not read vehicle facts out of this file.
+# other than the demo values, the 44-byte 83E1 block, and the four-byte 2439 reason are not recorded;
+# those `$22` reads answer two synthetic bytes. The added ECUs are not functional: 7DF mode 01 stays
+# HPCM2 and BECM, which is what the golden transcripts record. Do not read vehicle facts out of this file.
 
 s3 5000
 
@@ -50,6 +50,10 @@ did 90B1 00112233
 did 90F8 53 49 4D 50 41 52 54 30 30 31
 did 90FB 53 59 4E 54 48 45 54 49 43 2D 49 44 45 4E 54 2D 30 30 31 2D 58 59 5A   # 23 bytes: forces a multi-frame $22 answer
 did 5005 DE AD ext              # readable only in the extended session
+# i0 sends these before it selects module 17. The powertrain group leaves that header at 7E0.
+did 000D 2800                   # speed: first byte 40. A first byte of 255 is forced to 0
+did 000C 0C80                   # ICE rpm: uint16 / 4 = 800
+did 0005 5A00                   # coolant: first byte - 40 = 50 C
 
 ecu BECM req=7E4 resp=7EC functional=yes pad=00 latency=4
 pid 42 3390
@@ -73,6 +77,9 @@ did 41A6 0000
 did 41AD 0000                   # demo
 did 41C5 0000
 did 41C6 00000000               # demo
+# R sends these on the header Y left, which is this 7E4. First byte minus 1 indexes the 7E7 cell ramp.
+did 432A 0100                   # index 0, cell 4181
+did 432C 2100                   # index 32, cell 4201, a higher positive voltage than 4181
 did 432D 0000
 did 434F 0000
 did 4356 0000
@@ -88,6 +95,8 @@ did 4470 0000
 did 45FF 0000
 did 8334 0000
 did 83E2 0000
+did 432A 0100                   # cell index, first byte - 1, synthetic
+did 432C 0200                   # cell index, first byte - 1, synthetic
 
 ecu IPC req=244 resp=644 functional=no pad=00 latency=6
 did 83E1 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F 20 21 22 23 24 25 26 27 28 29 2A 2B   # 44 bytes (size from volt docs), content synthetic
@@ -122,6 +131,10 @@ lid 6D ascii SY6D
 
 ecu M7E1 req=7E1 resp=7E9 functional=no pad=00 latency=4
 did 2889 0000                   # also asked on 621, which has no recorded response id
+# Module 17 on an 11-bit session. 2414 is a signed int16 / 20. 2439 is four payload bytes.
+did 2414 00C8                   # +10 A
+did 2439 00000800               # byte 2 bit 3: ignition-switch start
+did 2C05 8000                   # aux pump: first byte / 2.55
 lid 90 ascii SYNTH000000000FKE
 lid 99 ascii SY99
 lid CC ascii SYCC
@@ -230,6 +243,10 @@ did 423D BB80
 did 423E BBA0
 did 423F BBC0
 did 4240 BBE0
+# Q selects module CD. With the 29-bit flag clear that header is 7E7.
+# 82A3 is the first byte times 2. 40D4 is a signed int16 / 20, then negated.
+did 82A3 B400                   # 360 V
+did 40D4 FE70                   # raw -400, negated to +20 A
 lid 90 ascii SYNTH000000000FKE
 lid 99 ascii SY99
 lid CC ascii SYCC
