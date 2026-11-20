@@ -11,8 +11,9 @@
 # `$1A 90` repeats the placeholder SYNTH000000000FKE. `$1A` 99, CC, DF, B0, 6F and 6D are synthetic
 # tags on the headers the 2026-11-14 scan used, so that scan is not refused before it reaches `$22`.
 # Nothing here decodes a `42xx` value. Calibration IDs and Mode 06 entries are synthetic. Lengths
-# other than the demo values, the 44-byte 83E1 block, and the four-byte 2439 reason are not recorded;
-# those `$22` reads answer two synthetic bytes. The added ECUs are not functional: 7DF mode 01 stays
+# other than the demo values, the 44-byte 83E1 block, the four-byte 2439 reason, and the four-byte
+# 41C5 and 41C6 trips are not recorded; the other `$22` reads answer two synthetic bytes. The added
+# ECUs are not functional: 7DF mode 01 stays
 # HPCM2 and BECM, which is what the golden transcripts record. Do not read vehicle facts out of this file.
 
 s3 5000
@@ -39,6 +40,7 @@ mode06 A1 hex 01 0A 0010 0000 00FF 02 0A 0030 0000 00FF
 dtc stored P0A7E
 dtc pending P0AE3
 did 002F 6C                     # demo
+did 1C47 6400                   # first byte / 10, synthetic
 did 41AD 0000                   # demo
 did 41C6 00000000               # demo
 did 43AF F800                   # demo
@@ -71,32 +73,33 @@ did 4210 0E10
 did 4211 0E0F
 did 4212 0E11
 # $22 reads the trial logged on ATSH7E4. Demo bytes where the demo log has them. 4368 is one byte, as on the cluster. The rest are two synthetic bytes; those lengths were not recorded.
-did 40E9 0000
-did 41A3 0000
-did 41A6 0000
+did 40E9 0190                   # uint16 / 2, synthetic
+did 41A3 01C2                   # uint16 / 10, synthetic
+did 41A6 1018                   # uint16 / 64 km, synthetic
 did 41AD 0000                   # demo
-did 41C5 0000
+did 41C5 00000280               # four bytes / 64, synthetic
 did 41C6 00000000               # demo
+did 41DA 00C8                   # signed int16 * 0.52, synthetic
 # R sends these on the header Y left, which is this 7E4. First byte minus 1 indexes the 7E7 cell ramp.
 did 432A 0100                   # index 0, cell 4181
 did 432C 2100                   # index 32, cell 4201, a higher positive voltage than 4181
 did 432D 0000
-did 434F 0000
+did 434F 4100                   # first byte - 40, synthetic
 did 4356 0000
 did 4368 00
 did 4369 0000
+did 436B 0190                   # uint16 / 2, synthetic
+did 436C 00C8                   # signed int16 / 20, synthetic
 did 437D 0000
 did 4389 0000
-did 43A5 0000
-did 43A6 0000
+did 43A5 0320                   # uint16, synthetic
+did 43A6 0C00                   # first byte * 25, synthetic
 did 43AE 0000
 did 43AF F800                   # demo
-did 4470 0000
+did 4470 0078                   # uint16 / 10, synthetic
 did 45FF 0000
-did 8334 0000
+did 8334 8000                   # first byte * 100 / 255, synthetic
 did 83E2 0000
-did 432A 0100                   # cell index, first byte - 1, synthetic
-did 432C 0200                   # cell index, first byte - 1, synthetic
 
 ecu IPC req=244 resp=644 functional=no pad=00 latency=6
 did 83E1 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F 20 21 22 23 24 25 26 27 28 29 2A 2B   # 44 bytes (size from volt docs), content synthetic
@@ -135,6 +138,11 @@ did 2889 0000                   # also asked on 621, which has no recorded respo
 did 2414 00C8                   # +10 A
 did 2439 00000800               # byte 2 bit 3: ignition-switch start
 did 2C05 8000                   # aux pump: first byte / 2.55
+did 002C 8000                   # first byte / 2.55, synthetic
+did 1154 4100                   # first byte - 40, synthetic
+did 1940 4100                   # first byte - 40, synthetic
+did 3040 01F4                   # uint16 / 10, then - 40, synthetic
+did 3041 01F4                   # uint16 / 10, then - 40, synthetic
 lid 90 ascii SYNTH000000000FKE
 lid 99 ascii SY99
 lid CC ascii SYCC
