@@ -203,6 +203,15 @@ did 40DB 4100                   # first byte - 40, synthetic
 did 40DD 4100                   # first byte - 40, synthetic
 did 40DF 4100                   # first byte - 40, synthetic
 did 40E1 4100                   # first byte - 40, synthetic
+# T joins these four and does not select a module. R then joins 432A, 432C, 8334, and 43AF.
+did 4470 0078                   # uint16 / 10, same bytes as BECM
+did 41C5 00000280               # four bytes / 64, same bytes as BECM
+did 41C6 00000000               # four bytes / 64, same bytes as BECM
+did 41AD 0000                   # uint16 * 0.125, same bytes as BECM
+did 432A 0100                   # index 0, so the follow-up read is 4181
+did 432C 2100                   # index 32, so the follow-up read is 4201
+did 4181 B000                   # (uint16 * 5) / 65535 stays positive
+did 4201 B400                   # index 32 in the cell table
 lid 90 ascii SYNTH000000000FKE
 lid 99 ascii SY99
 lid CC ascii SYCC
