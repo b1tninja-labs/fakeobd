@@ -25,6 +25,10 @@ pid 0D 00                       # vehicle speed
 pid 11 40                       # throttle position
 pid 42 3390                     # control module voltage
 freeze 05 5A
+# g0 calls B0("11") and then reads these three. 1C47 is already answered below. Module 11 is this 7E0.
+did 1C1E 0000                   # synthetic positive, scale not recorded
+did 1C38 0000                   # synthetic positive, scale not recorded
+did 1C39 0000                   # synthetic positive, scale not recorded
 lid 90 ascii SYNTH000000000FKE   # $1A 90. Placeholder, 17 characters, not a VIN.
 lid 99 ascii SY99
 lid CC ascii SYCC
@@ -61,6 +65,27 @@ ecu BECM req=7E4 resp=7EC functional=yes pad=00 latency=4
 pid 42 3390
 pid 5B 8C                       # hybrid battery pack remaining life, synthetic
 info 0A hex 01 42 45 43 4D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+# U, V, W, and Z call A0("CB") before these. g0 calls B0("CB") before 41B0. Module CB is this 7E4.
+did 41B0 0000                   # synthetic positive, scale not recorded
+did 41B7 0000                   # synthetic positive, scale not recorded
+did 436F 0000                   # synthetic positive, scale not recorded
+did 4372 0000                   # synthetic positive, scale not recorded
+did 439B 0000                   # synthetic positive, scale not recorded
+did 441E 0000                   # synthetic positive, scale not recorded
+did 4425 0000                   # synthetic positive, scale not recorded
+did 43CB 0000                   # synthetic positive, scale not recorded
+did 43CC 0000                   # synthetic positive, scale not recorded
+did 43CD 0000                   # synthetic positive, scale not recorded
+did 43CE 0000                   # synthetic positive, scale not recorded
+did 43CF 0000                   # synthetic positive, scale not recorded
+did 452D 0000                   # synthetic positive, scale not recorded
+did 452E 0000                   # synthetic positive, scale not recorded
+did 4531 0000                   # synthetic positive, scale not recorded
+did 4533 0000                   # synthetic positive, scale not recorded
+did 4545 0000                   # synthetic positive, scale not recorded
+did 4546 0000                   # synthetic positive, scale not recorded
+did 8375 0000                   # synthetic positive, scale not recorded
+did 8377 0000                   # synthetic positive, scale not recorded
 lid 90 ascii SYNTH000000000FKE   # the app asks 7E4 for $1A 90 first; same placeholder, not a VIN
 lid 99 ascii SY99
 lid CC ascii SYCC
@@ -104,11 +129,24 @@ did 83E2 0000
 ecu IPC req=244 resp=644 functional=no pad=00 latency=6
 did 83E1 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F 20 21 22 23 24 25 26 27 28 29 2A 2B   # 44 bytes (size from volt docs), content synthetic
 did 4368 12
+# r0 calls A0("80") then 228000 when single-wire is on. Module 80 is this 244.
+did 8000 0000                   # synthetic positive, scale not recorded
 
 # Addresses the 2026-11-14 trial used and this profile did not have. Names are the request id: volt does
 # not say which module they are. functional=no, so they do not join the 7DF mode 01 broadcast.
 
 ecu M241 req=241 resp=641 functional=no pad=00 latency=5
+# h0, g0, and n0 call B0("40") before these $22 reads. Module 40 is this 241. n0's pressures are 225008 through 225005.
+did 5005 0000                   # synthetic positive, scale not recorded
+did 5006 0000                   # synthetic positive, scale not recorded
+did 5007 0000                   # synthetic positive, scale not recorded
+did 5008 0000                   # synthetic positive, scale not recorded
+did 900D 0000                   # synthetic positive, scale not recorded
+did 9025 0000                   # synthetic positive, scale not recorded
+did 9037 0000                   # synthetic positive, scale not recorded
+did 90B1 0000                   # synthetic positive, scale not recorded
+did 90F8 0000                   # synthetic positive, scale not recorded
+did 90FB 0000                   # synthetic positive, scale not recorded
 lid 90 ascii SYNTH000000000FKE   # second $1A 90, after ATCRA641; same placeholder, not a VIN
 lid 99 ascii SY99
 lid CC ascii SYCC
