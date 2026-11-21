@@ -77,6 +77,7 @@ did 436F 4100                   # first byte - 40, synthetic
 did 4372 0001                   # second byte 1 is Open
 did 439B 0100                   # first byte 1 is Connected
 did 441E 0800                   # bit 3 set
+did 4424 8500                   # (uint16 - 32768) / 128, synthetic
 did 4425 3C00                   # first byte - 40, synthetic
 did 43CB 01000000               # byte 0 bit 0, full charge
 did 43CC 02000000               # byte 0 bit 1, time of day inhibit
@@ -156,7 +157,16 @@ did 9037 0000                   # first byte stored, no named scale
 did 90B1 0FA0                   # uint16 / 1000, then * 0.976
 did 90F8 4000                   # signed int16 * 100 / 32767
 did 90FB 0100                   # signed int16 / 128
+# X sends these on the header h0 left. Module 40 is this 241.
+did 801F 6400                   # first byte / 2, then - 40, synthetic
+did 82B2 0F00                   # first byte * 2.7, synthetic
+did 817B 0E00                   # first byte * 14, synthetic
+did 41B4 07D0                   # uint16, synthetic
+did 41B2 03E8                   # uint16, synthetic
+did 82B5 01F4                   # uint16, synthetic
+did 451E 8000                   # first byte / 2.55, synthetic
 lid 90 ascii SYNTH000000000FKE   # second $1A 90, after ATCRA641; same placeholder, not a VIN
+lid 01 ascii SY01 SY02 SY03 SY04   # sensor ids; the app removes spaces
 lid 99 ascii SY99
 lid CC ascii SYCC
 lid DF ascii SYNTH1ADF0000001    # the app sets ATFCSD300014 before this read, so the answer is multi-frame
@@ -329,10 +339,40 @@ did 423D BB80
 did 423E BBA0
 did 423F BBC0
 did 4240 BBE0
+# The cell-97 probe appends 4241-4250. Index continues, so the value stays B000 + index*0020.
+did 4241 BC00
+did 4242 BC20
+did 4243 BC40
+did 4244 BC60
+did 4245 BC80
+did 4246 BCA0
+did 4247 BCC0
+did 4248 BCE0
+did 4249 BD00
+did 424A BD20
+did 424B BD40
+did 424C BD60
+did 424D BD80
+did 424E BDA0
+did 424F BDC0
+did 4250 BDE0
 # Q selects module CD. With the 29-bit flag clear that header is 7E7.
 # 82A3 is the first byte times 2. 40D4 is a signed int16 / 20, then negated.
 did 82A3 B400                   # 360 V
 did 40D4 FE70                   # raw -400, negated to +20 A
+# Battery-plus reads this header does not have yet. Scales match the 7E1 lines.
+did 24AC 0014                   # uint16 * 2, synthetic
+did 0042 03E8                   # uint16 / 1000, synthetic
+did 40D7 4100                   # first byte - 40, synthetic
+did 40D9 4100                   # first byte - 40, synthetic
+did 40DB 4100                   # first byte - 40, synthetic
+did 40DD 4100                   # first byte - 40, synthetic
+did 40DF 4100                   # first byte - 40, synthetic
+did 40E1 4100                   # first byte - 40, synthetic
+did 41A4 4100                   # first byte - 40, synthetic
+did 435A 0400                   # first byte * 25, synthetic
+did 41B6 0100                   # uint16, synthetic
+did 439E 8000                   # first byte / 2.55, synthetic
 lid 90 ascii SYNTH000000000FKE
 lid 99 ascii SY99
 lid CC ascii SYCC
