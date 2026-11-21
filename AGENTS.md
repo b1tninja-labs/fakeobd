@@ -31,9 +31,9 @@ must pass before a change is done.
 
 ## Invariants
 
-- **Most standards are not read.** `primarysource` has ISO 14229-1:2013 (`iso_*` tools: read it before writing a UDS
-  rule). ISO 15765-2, SAE J1979, GMLAN and the ELM327/STN datasheets are not in it, and the `gm_*` corpus (GM OBD PDFs)
-  needs `primarysource gm import` before it answers. Do not cite a section or quote normative wording from memory; mark the row `[unread]` in
+- **Most standards are not read.** `primarysource` has ISO 14229-1:2013 and ISO 15765-2:2016 (`iso_*` tools: read
+  the clause before writing a rule that cites it). SAE J1979, GMLAN and the ELM327/STN datasheets are not in it, and the `gm_*` corpus (GM OBD PDFs)
+  needs `primarysource gm import` before it answers. ISO 14229-2 is not imported. Do not cite a section or quote normative wording from memory; mark the row `[unread]` in
   ROADMAP.md and add or update the gap in `docs/ground-truth-gaps.md`. RFC questions go through the `rfc_*`
   tools.
 - A row is `[ok]` only when a named test exists and failed when the code it covers was deliberately broken.

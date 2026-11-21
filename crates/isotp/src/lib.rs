@@ -1,9 +1,12 @@
-//! `isotp`: ISO-TP (ISO 15765-2) framing over classic CAN, 8-byte frames.
+//! `isotp`: ISO-TP framing over classic CAN, 8-byte frames (TX_DL = 8, normal addressing).
 //!
-//! **Provenance.** ISO 15765-2 is not in `primarysource`; the PCI nibbles, length fields, flow-status
-//! values and STmin encoding below are from memory and every row that depends on them is `[unread]` in
-//! ROADMAP.md. What the tests prove is that this crate agrees with itself and with the transcripts it
-//! produced, not that it agrees with the standard.
+//! PCI layout, sequence numbers and STmin follow ISO 15765-2:2016 clauses read via `iso_*`:
+//! `iso:15765-2@2016§9.2.1`, `iso:15765-2@2016§9.3`, `iso:15765-2@2016§9.4.2`,
+//! `iso:15765-2@2016§9.4.3`, `iso:15765-2@2016§9.4.4`, `iso:15765-2@2016§9.4.5`,
+//! `iso:15765-2@2016§9.6.1`, `iso:15765-2@2016§9.6.2`, `iso:15765-2@2016§9.6.3`,
+//! `iso:15765-2@2016§9.6.4`, `iso:15765-2@2016§9.6.5`.
+//! Sentences those clauses contain that the simulator does not follow are listed in
+//! `docs/architecture.md`.
 
 /// One classic CAN data frame with an 11-bit identifier.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -37,6 +40,8 @@ impl FlowControl {
         block_size: 0,
         st_min: 0,
     };
+    /// FC N_PDU: PCI type 3, flow status in the low nibble, then block size and STmin.
+    /// `iso:15765-2@2016§9.6.1`, `iso:15765-2@2016§9.6.5`.
     pub fn encode(self) -> Vec<u8> {
         let fs = match self.status {
             FlowStatus::ContinueToSend => 0,
@@ -116,8 +121,8 @@ pub fn decode(data: &[u8]) -> Result<Pdu, DecodeError> {
     }
 }
 
-/// STmin in microseconds: 0x00..=0x7F are milliseconds, 0xF1..=0xF9 are 100..=900 microseconds, anything
-/// else is reserved and treated as the longest millisecond value.
+/// STmin in microseconds. `iso:15765-2@2016§9.6.5`: 0x00..=0x7F are milliseconds, 0xF1..=0xF9 are
+/// 100..=900 microseconds, and a reserved value is 127 ms.
 pub fn st_min_us(raw: u8) -> u32 {
     match raw {
         0x00..=0x7F => u32::from(raw) * 1000,
@@ -154,6 +159,7 @@ pub fn segment(payload: &[u8], pad: Option<u8>) -> Result<Segments, SegmentError
         }
         v
     };
+    // TX_DL = 8, normal addressing: up to 7 data bytes in one SF. `iso:15765-2@2016§9.2.1`.
     if payload.len() <= 7 {
         let mut f = vec![payload.len() as u8];
         f.extend_from_slice(payload);
@@ -171,6 +177,7 @@ pub fn segment(payload: &[u8], pad: Option<u8>) -> Result<Segments, SegmentError
         .chunks(7)
         .enumerate()
         .map(|(i, c)| {
+            // First CF is SN 1. After 15 the next CF is 0. `iso:15765-2@2016§9.6.4`.
             let mut f = vec![0x20 | ((i + 1) & 0x0F) as u8];
             f.extend_from_slice(c);
             padded(f)
@@ -257,6 +264,7 @@ impl Reassembler {
                 if !self.active {
                     return Err(RxError::Unexpected);
                 }
+                // An unexpected sequence number aborts the reception. `iso:15765-2@2016§9.6.4`.
                 if sn != self.next_sn {
                     let e = RxError::BadSequence {
                         expected: self.next_sn,

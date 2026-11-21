@@ -43,6 +43,41 @@ counters are independent. The audit sink (a JSON-lines file) is shared.
 marked `functional=yes`. The adapter's default receive filter is `7E8..7EF`; `ATCRA`, `ATCF` and `ATCM`
 change it, which is why a request to the cluster at `244` needs `ATCRA644` (as the Voltage app does).
 
+## ISO-TP exchange
+
+Classic CAN, TX_DL = 8, normal addressing. A multi-frame request uses the same PDUs in the other direction:
+the tester sends the first frame, the ECU sends the flow control, and the tester sends the consecutive frames.
+`iso:15765-2@2016§9.4.5`.
+
+```mermaid
+sequenceDiagram
+    participant Tester
+    participant ECU
+    Note over Tester,ECU: Single frame, TX_DL = 8, normal addressing (9.2.1, 9.4.2, 9.6.2)
+    Tester->>ECU: SF, PCI nibble 0, SF_DL 1 to 7
+    ECU->>Tester: SF response
+    Note over Tester,ECU: Longer than 7 data bytes is an FF plus CFs (9.3, 9.4.3, 9.4.4, 9.6.1, 9.6.3)
+    ECU->>Tester: FF, 12-bit FF_DL, 6 data bytes
+    Tester->>ECU: FC CTS, FS 0, block size, STmin (9.4.5, 9.6.5)
+    Note over Tester,ECU: First CF is sequence number 1, then 2, 3, and so on (9.6.4)
+    ECU->>Tester: CF SN=1
+    ECU->>Tester: CF SN=2
+    Note over Tester,ECU: When the sequence number reaches 15 the next CF is 0 (9.6.4)
+    ECU->>Tester: CF SN=15
+    ECU->>Tester: CF SN=0
+```
+
+### Where a read sentence and the code differ
+
+Read 2026-11-21 from `iso:15765-2@2016`. Protocol behavior is unchanged.
+
+- `iso:15765-2@2016§9.6.4`: an intermediate consecutive frame's CAN_DL has to match the RX_DL taken from the first frame, and only the last consecutive frame may be shorter. `Reassembler::push` keeps the bytes the frame carries, up to the length still expected.
+- `iso:15765-2@2016§9.6.2¶23`: when padding is in use, a single frame whose CAN_DL is not 8 is ignored. `decode` accepts a single frame whenever SF_DL is 1..=7 and fits in the frame, which is how a padded frame and an unpadded frame both reassemble. The same sentence's SF_DL 0 and over-long SF_DL conditions are what the decode rejects.
+- `iso:15765-2@2016§9.6.1` and `iso:15765-2@2016§9.6.3`: a message longer than 4095 bytes uses the four-byte FF_DL escape. `segment` returns `TooLong` for that length. A received escape has a 12-bit length of 0 and fails as a short first frame.
+- `iso:15765-2@2016§9.6.2` and `iso:15765-2@2016§9.6.3`: a bad single frame or a too-short first frame is ignored. `decode` rejects those frames. `Reassembler::push` also clears a reception already in progress when `decode` fails.
+- `iso:15765-2@2016§9.6.5`: a flow-control frame with a reserved flow status aborts the segmented transmission. `decode` returns `BadFlowControl`. `Ecu::on_frame` leaves the unsent consecutive frames in place, so a later continue-to-send still transmits them. The adapter's `exchange` stops when the queue holds no decodable flow-control frame.
+- `iso:15765-2@2016§9.6.5`: STmin 0xF1..=0xF9 means 100..=900 µs, and a reserved STmin means 127 ms. `st_min_us` returns those values. `Ecu::on_flow` and `Elm::exchange` add `st_min_us / 1000` milliseconds on the virtual clock, so a separation below 1 ms adds no further delay.
+
 ## Fault injection
 
 One fault per line, shared by the `--faults` file and the transcript `@ fault:` header.
