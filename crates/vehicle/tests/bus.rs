@@ -695,7 +695,7 @@ fn trial_addresses_answer_the_requests_the_app_sent() {
     );
     assert_eq!(
         one(request(&mut b, 0x7E7, &[0x22, 0x42, 0x41])),
-        [0x7F, 0x22, 0x31]
+        [0x62, 0x42, 0x41, 0xBC, 0x00]
     );
     let scan_lids = [
         (0x90u8, &b"SYNTH000000000FKE"[..]),
@@ -730,4 +730,64 @@ fn trial_addresses_answer_the_requests_the_app_sent() {
     // The added ECUs are not on the functional broadcast.
     assert_eq!(request(&mut b, 0x7DF, &[0x01, 0x00]).len(), 2);
     assert_eq!(request(&mut b, 0x7DF, &[0x2E, 0xD2, 0x1B]).len(), 2);
+}
+
+#[test]
+fn remaining_reads_answer_on_the_header_the_screen_asks() {
+    let mut b = bus();
+    let dids = [
+        (0x241u32, 0x641u32, 0x801Fu16, [0x64, 0x00]),
+        (0x241, 0x641, 0x82B2, [0x0F, 0x00]),
+        (0x241, 0x641, 0x817B, [0x0E, 0x00]),
+        (0x241, 0x641, 0x41B4, [0x07, 0xD0]),
+        (0x241, 0x641, 0x41B2, [0x03, 0xE8]),
+        (0x241, 0x641, 0x82B5, [0x01, 0xF4]),
+        (0x241, 0x641, 0x451E, [0x80, 0x00]),
+        (0x7E7, 0x7EF, 0x24AC, [0x00, 0x14]),
+        (0x7E7, 0x7EF, 0x0042, [0x03, 0xE8]),
+        (0x7E7, 0x7EF, 0x40D7, [0x41, 0x00]),
+        (0x7E7, 0x7EF, 0x40D9, [0x41, 0x00]),
+        (0x7E7, 0x7EF, 0x40DB, [0x41, 0x00]),
+        (0x7E7, 0x7EF, 0x40DD, [0x41, 0x00]),
+        (0x7E7, 0x7EF, 0x40DF, [0x41, 0x00]),
+        (0x7E7, 0x7EF, 0x40E1, [0x41, 0x00]),
+        (0x7E7, 0x7EF, 0x41A4, [0x41, 0x00]),
+        (0x7E7, 0x7EF, 0x435A, [0x04, 0x00]),
+        (0x7E7, 0x7EF, 0x41B6, [0x01, 0x00]),
+        (0x7E7, 0x7EF, 0x439E, [0x80, 0x00]),
+        (0x7E4, 0x7EC, 0x4424, [0x85, 0x00]),
+    ];
+    for (req, resp, did, data) in dids {
+        let got = request(&mut b, req, &[0x22, (did >> 8) as u8, did as u8]);
+        assert_eq!(got.len(), 1, "{req:03X} {did:04X}");
+        assert_eq!(got[0].0, resp, "{req:03X} {did:04X}");
+        assert_eq!(
+            got[0].1,
+            [0x62, (did >> 8) as u8, did as u8, data[0], data[1]],
+            "{req:03X} {did:04X}"
+        );
+    }
+    for index in 0..16u16 {
+        let did = 0x4241 + index;
+        let raw = 0xBC00 + index * 0x20;
+        let got = request(&mut b, 0x7E7, &[0x22, (did >> 8) as u8, did as u8]);
+        assert_eq!(got.len(), 1, "{did:04X}");
+        assert_eq!(got[0].0, 0x7EF, "{did:04X}");
+        assert_eq!(
+            got[0].1,
+            [
+                0x62,
+                (did >> 8) as u8,
+                did as u8,
+                (raw >> 8) as u8,
+                raw as u8,
+            ],
+            "{did:04X}"
+        );
+    }
+    let lid = request(&mut b, 0x241, &[0x1A, 0x01]);
+    assert_eq!(lid.len(), 1);
+    assert_eq!(lid[0].0, 0x641);
+    assert_eq!(&lid[0].1[..2], [0x5A, 0x01]);
+    assert_eq!(&lid[0].1[2..], b"SY01 SY02 SY03 SY04");
 }
