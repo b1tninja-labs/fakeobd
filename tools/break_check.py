@@ -6,7 +6,8 @@ require the test to fail; then restore the file byte for byte.
     python tools/break_check.py --write-log     # also rewrite docs/BREAK-LOG.md
 
 A mutation that does not change the file (the `old` text is not found exactly once) is an error, not a
-pass: the table would otherwise rot as the code moves. Run from the repository root.
+pass: the table would otherwise rot as the code moves. Cargo builds workspace members only; a crate whose
+dependency lives outside this repository is not compiled. Run from the repository root.
 """
 
 from __future__ import annotations
@@ -99,8 +100,9 @@ MUTATIONS: list[tuple[str, str, str, str, list[str]]] = [
      ["-p", "fakeobd", "--test", "pipe", "a_pipe_answers"]),
     ("M40", "crates/fakeobd/src/lib.rs", "pub fn close(&mut self) {\n        self.tx = None;", "pub fn close(&mut self) {\n        let _ = &self.tx;",
      ["-p", "fakeobd", "--test", "pipe", "close_is_idempotent"]),
-    ("M41", "crates/serial-bridge/src/lib.rs", 'LineAction::Refuse => self.local("?"),', "LineAction::Refuse => {}",
-     ["--manifest-path", "crates/serial-bridge/Cargo.toml", "a_relay_between"]),
+    # serial-bridge is not a workspace member, so this breaks the refusal that crate answers locally.
+    ("M41", "crates/obd-policy/src/filter.rs", "Line::Bypass(_) | Line::Malformed => LineAction::Refuse,", 'Line::Bypass(_) | Line::Malformed => LineAction::Respond("?".into()),',
+     ["-p", "obd-policy", "--test", "filter", "lines_are_forwarded"]),
     ("M42", "profiles/volt-lab.profile", "ecu M241 req=241 resp=641", "ecu M241 req=242 resp=642",
      ["-p", "vehicle", "--test", "bus", "trial_addresses_answer"]),
     ("M43", "profiles/lab-control.policy", "allow-pdu AE3BFF01010101", "allow-pdu AE3BFF01010100",
@@ -111,8 +113,40 @@ MUTATIONS: list[tuple[str, str, str, str, list[str]]] = [
 ]
 
 
+def workspace_manifests() -> set[Path]:
+    text = (ROOT / "Cargo.toml").read_text(encoding="utf8")
+    body = text.split("members", 1)[1].split("]", 1)[0]
+    return {(ROOT / rel / "Cargo.toml").resolve() for rel in body.split('"')[1::2]}
+
+
+def workspace_test_args(args: list[str]) -> list[str]:
+    """Drop a `--manifest-path` that is not a workspace member.
+
+    `crates/serial-bridge` is one: it path-depends on gattmirror `serial-stream` outside this repository,
+    and the runner does not have that directory. The job builds workspace members only.
+    """
+    if len(args) >= 2 and args[0] == "--manifest-path":
+        if (ROOT / args[1]).resolve() not in workspace_manifests():
+            return ["--workspace", *args[2:]]
+    return list(args)
+
+
+def build_selector(args: list[str]) -> list[str]:
+    """Package selector for `cargo test --no-run`. Never a non-member manifest."""
+    if len(args) >= 2 and args[0] == "-p":
+        return args[:2]
+    if args[:1] == ["--workspace"]:
+        return ["--workspace"]
+    if len(args) >= 2 and args[0] == "--manifest-path":
+        if (ROOT / args[1]).resolve() in workspace_manifests():
+            return args[:2]
+        return ["--workspace"]
+    return args[:2]
+
+
 def run(m) -> tuple[str, str]:
-    mid, rel, old, new, args = m
+    mid, rel, old, new, raw_args = m
+    args = workspace_test_args(raw_args)
     path = ROOT / rel
     original = path.read_bytes()
     text = original.decode("utf8")
@@ -121,7 +155,7 @@ def run(m) -> tuple[str, str]:
     try:
         path.write_bytes(text.replace(old, new).encode("utf8"))
         # first make sure it still compiles: a mutation that breaks the build proves nothing
-        build = subprocess.run(["cargo", "test", "--no-run", *args[:2]], cwd=ROOT, capture_output=True, text=True)
+        build = subprocess.run(["cargo", "test", "--no-run", *build_selector(args)], cwd=ROOT, capture_output=True, text=True)
         if build.returncode != 0:
             return "ERROR", "mutant does not compile: " + build.stderr.strip().splitlines()[-1]
         r = subprocess.run(["cargo", "test", *args], cwd=ROOT, capture_output=True, text=True)
