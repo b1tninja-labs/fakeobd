@@ -390,7 +390,7 @@ pub fn compare(expected: &Transcript, actual: &Transcript) -> Report {
         };
         r.results.push((e.request.clone(), v));
     }
-    for extra in &actual.entries[expected.entries.len()..] {
+    for extra in actual.entries.iter().skip(expected.entries.len()) {
         r.results.push((
             extra.request.clone(),
             Verdict::Fail {
