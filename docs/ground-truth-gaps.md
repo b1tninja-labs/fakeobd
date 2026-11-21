@@ -1,12 +1,15 @@
 # Ground-truth gaps
 
-Every place where the simulator's behaviour is a guess about a real adapter or a real ECU. No ELM327 or
-STN datasheet, and none of ISO 15765-2, ISO 14229-1 or SAE J1979, is in `primarysource`; the behaviour was
+Every place where the simulator's behaviour is a guess about a real adapter or a real ECU. `primarysource`
+holds ISO 14229-1:2013 and ISO 15765-2:2016; the clauses named in ROADMAP.md were checked against them.
+SAE J1979 and the ELM327/STN datasheets are still absent. The behaviour was
 written from the command lists in `obdlink-re/docs/COMMANDS.md`, the dialogue recorded by volt's
 `tools/fake_elm327.py`, the traffic the Voltage app actually sends ([AVD-TRIAL.md](AVD-TRIAL.md)) and
 recollection. None of it has been compared with hardware.
 
 **Update 2026-11-15:** `primarysource` now has `iso_*` (ISO 14229-1:2013 only) and `gm_*` (registered, corpus not yet imported: `primarysource gm import`). ISO 15765-2, SAE J1979 and the ELM327/STN datasheets are still absent. UDS rows have been checked where noted below.
+
+**Update 2026-11-21:** ISO 15765-2:2016 is imported (`iso:15765-2@2016`). Clauses 9.2.1, 9.3, 9.4.2 through 9.4.5 and 9.6.1 through 9.6.5 were read. The ISO-TP rows those clauses match are `[ok]` in ROADMAP.md. The exchange, and the sentences the code does not follow, are in [architecture.md](architecture.md). SAE J1979 and the ELM327/STN datasheets are still absent. ISO 14229-2 is not imported.
 
 Each gap has an identifier. A transcript entry that carries `~ gap <id>` is expected to differ from a real
 adapter; `fakeobd replay` against an external target reports such a difference as a **known gap** instead
