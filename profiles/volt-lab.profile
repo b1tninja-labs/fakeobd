@@ -11,8 +11,9 @@
 # `$1A 90` repeats the placeholder SYNTH000000000FKE. `$1A` 99, CC, DF, B0, 6F and 6D are synthetic
 # tags on the headers the 2026-11-14 scan used, so that scan is not refused before it reaches `$22`.
 # Nothing here decodes a `42xx` value. Calibration IDs and Mode 06 entries are synthetic. Lengths
-# other than the demo values, the 44-byte 83E1 block, the four-byte 2439 reason, and the four-byte
-# 41C5 and 41C6 trips are not recorded; the other `$22` reads answer two synthetic bytes. The added
+# other than the demo values, the 44-byte 83E1 block on 244, the three-byte schedules on 7E4,
+# the four-byte charge-history words, the four-byte 2439 reason, and the four-byte 41C5 and 41C6
+# trips are not recorded; the other `$22` reads answer two synthetic bytes. The added
 # ECUs are not functional: 7DF mode 01 stays
 # HPCM2 and BECM, which is what the golden transcripts record. Do not read vehicle facts out of this file.
 
@@ -26,9 +27,9 @@ pid 11 40                       # throttle position
 pid 42 3390                     # control module voltage
 freeze 05 5A
 # g0 calls B0("11") and then reads these three. 1C47 is already answered below. Module 11 is this 7E0.
-did 1C1E 0000                   # synthetic positive, scale not recorded
-did 1C38 0000                   # synthetic positive, scale not recorded
-did 1C39 0000                   # synthetic positive, scale not recorded
+did 1C1E 0100                   # code 1, normal high temp
+did 1C38 8000                   # first byte * 100 / 255
+did 1C39 8000                   # first byte >= 128 is true
 lid 90 ascii SYNTH000000000FKE   # $1A 90. Placeholder, 17 characters, not a VIN.
 lid 99 ascii SY99
 lid CC ascii SYCC
@@ -45,6 +46,7 @@ dtc stored P0A7E
 dtc pending P0AE3
 did 002F 6C                     # demo
 did 1C47 6400                   # first byte / 10, synthetic
+did 0042 03E8                   # uint16 / 1000, synthetic
 did 41AD 0000                   # demo
 did 41C6 00000000               # demo
 did 43AF F800                   # demo
@@ -66,26 +68,32 @@ pid 42 3390
 pid 5B 8C                       # hybrid battery pack remaining life, synthetic
 info 0A hex 01 42 45 43 4D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 # U, V, W, and Z call A0("CB") before these. g0 calls B0("CB") before 41B0. Module CB is this 7E4.
-did 41B0 0000                   # synthetic positive, scale not recorded
-did 41B7 0000                   # synthetic positive, scale not recorded
-did 436F 0000                   # synthetic positive, scale not recorded
-did 4372 0000                   # synthetic positive, scale not recorded
-did 439B 0000                   # synthetic positive, scale not recorded
-did 441E 0000                   # synthetic positive, scale not recorded
-did 4425 0000                   # synthetic positive, scale not recorded
-did 43CB 0000                   # synthetic positive, scale not recorded
-did 43CC 0000                   # synthetic positive, scale not recorded
-did 43CD 0000                   # synthetic positive, scale not recorded
-did 43CE 0000                   # synthetic positive, scale not recorded
-did 43CF 0000                   # synthetic positive, scale not recorded
-did 452D 0000                   # synthetic positive, scale not recorded
-did 452E 0000                   # synthetic positive, scale not recorded
-did 4531 0000                   # synthetic positive, scale not recorded
-did 4533 0000                   # synthetic positive, scale not recorded
-did 4545 0000                   # synthetic positive, scale not recorded
-did 4546 0000                   # synthetic positive, scale not recorded
-did 8375 0000                   # synthetic positive, scale not recorded
-did 8377 0000                   # synthetic positive, scale not recorded
+did 0042 03E8                   # uint16 / 1000, synthetic
+did 1C43 4100                   # first byte - 40, synthetic
+did 41B0 0FA0                   # uint16 / 1000, synthetic
+did 41B7 07D0                   # uint16 / 1000, synthetic
+did 4357 8000                   # first byte / 2.55, synthetic
+did 436F 4100                   # first byte - 40, synthetic
+did 4372 0001                   # second byte 1 is Open
+did 439B 0100                   # first byte 1 is Connected
+did 441E 0800                   # bit 3 set
+did 4425 3C00                   # first byte - 40, synthetic
+did 43CB 01000000               # byte 0 bit 0, full charge
+did 43CC 02000000               # byte 0 bit 1, time of day inhibit
+did 43CD 00010000               # byte 1 bit 0, low severity fault
+did 43CE 00000200               # byte 2 bit 1, hybrid pack protection
+did 43CF 00000001               # byte 3 bit 0, max charge time
+did 452D 8000                   # first byte / 2.55, synthetic
+did 452E 4000                   # first byte / 2.55, synthetic
+did 452F 0000                   # 0 is Passed
+did 4530 0000                   # 0 is Passed
+did 4531 0100                   # 1 is L1
+did 4532 0100                   # 1 is Ready
+did 4533 6400                   # first byte * 0.3, synthetic
+did 4545 B400                   # first byte * 0.05, synthetic
+did 4546 8000                   # first byte / 2.55, synthetic
+did 8375 020A00                 # weekday 2, 10:00
+did 8377 021200                 # weekday 2, 18:00
 lid 90 ascii SYNTH000000000FKE   # the app asks 7E4 for $1A 90 first; same placeholder, not a VIN
 lid 99 ascii SY99
 lid CC ascii SYCC
@@ -111,8 +119,8 @@ did 432C 2100                   # index 32, cell 4201, a higher positive voltage
 did 432D 0000
 did 434F 4100                   # first byte - 40, synthetic
 did 4356 0000
-did 4368 00
-did 4369 0000
+did 4368 0A                     # byte * 2 in the 4369 power product
+did 4369 3200                   # first byte * 0.2, synthetic
 did 436B 0190                   # uint16 / 2, synthetic
 did 436C 00C8                   # signed int16 / 20, synthetic
 did 437D 0000
@@ -124,7 +132,8 @@ did 43AF F800                   # demo
 did 4470 0078                   # uint16 / 10, synthetic
 did 45FF 0000
 did 8334 8000                   # first byte * 100 / 255, synthetic
-did 83E2 0000
+did 83E1 010800                 # weekday 1, 08:00; the 44-byte copy stays on 244
+did 83E2 010C1E                 # weekday 1, 12:30
 
 ecu IPC req=244 resp=644 functional=no pad=00 latency=6
 did 83E1 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F 20 21 22 23 24 25 26 27 28 29 2A 2B   # 44 bytes (size from volt docs), content synthetic
@@ -137,16 +146,16 @@ did 8000 0000                   # synthetic positive, scale not recorded
 
 ecu M241 req=241 resp=641 functional=no pad=00 latency=5
 # h0, g0, and n0 call B0("40") before these $22 reads. Module 40 is this 241. n0's pressures are 225008 through 225005.
-did 5005 0000                   # synthetic positive, scale not recorded
-did 5006 0000                   # synthetic positive, scale not recorded
-did 5007 0000                   # synthetic positive, scale not recorded
-did 5008 0000                   # synthetic positive, scale not recorded
-did 900D 0000                   # synthetic positive, scale not recorded
-did 9025 0000                   # synthetic positive, scale not recorded
-did 9037 0000                   # synthetic positive, scale not recorded
-did 90B1 0000                   # synthetic positive, scale not recorded
-did 90F8 0000                   # synthetic positive, scale not recorded
-did 90FB 0000                   # synthetic positive, scale not recorded
+did 5005 0640                   # uint16 / 1600, then the pressure unit
+did 5006 0640                   # same scale as 5005
+did 5007 0640                   # high byte with 5008 low byte, then / 1600
+did 5008 0640                   # uint16 / 1600, then the pressure unit
+did 900D 0100                   # 1 is power take-off
+did 9025 0000                   # first byte stored, no named scale
+did 9037 0000                   # first byte stored, no named scale
+did 90B1 0FA0                   # uint16 / 1000, then * 0.976
+did 90F8 4000                   # signed int16 * 100 / 32767
+did 90FB 0100                   # signed int16 / 128
 lid 90 ascii SYNTH000000000FKE   # second $1A 90, after ATCRA641; same placeholder, not a VIN
 lid 99 ascii SY99
 lid CC ascii SYCC
