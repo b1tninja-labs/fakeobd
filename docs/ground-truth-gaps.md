@@ -10,6 +10,8 @@ with hardware.
 
 **Update 2026-11-16:** ISO 15765-2:2016 and ISO 15031-3:2004 are imported. In ISO 15765-2:2016, §9 is the transport layer protocol, §9.2 is single-frame transmission (§9.2.1 when the transmit data length is 8, §9.2.2 when it is greater), and §9.3 is multiple-frame transmission. The simulator's 7-byte single frame is the §9.2.1 normal-addressing case. A search of that document has no `ATSP6`, no `0x400`, and no bit rate. ISO 15031-3:2004 is the diagnostic connector. SAE J1979:2002 is an unindexed scan; mode numbers are not cited from it. Sequence-number and STmin rows were not re-read.
 
+**Update 2026-11-21:** ISO 15765-2:2016 §9.6.4.3, §9.6.4.4, §9.6.5.1, and §9.6.5.4 were read. The sequence number, the flow-status nibble, and STmin are named in [ROADMAP.md](../ROADMAP.md). The tests on this branch were not re-compared, so those two rows stay `[unread]`. ISO 14229-1:2013 §10.2 is ReadDataByIdentifier and §9.6 is TesterPresent. Their response layouts were not re-read. `$27` stays closed. `$34`–`$37` stay unimplemented.
+
 Each gap has an identifier. A transcript entry that carries `~ gap <id>` is expected to differ from a real
 adapter; `fakeobd replay` against an external target reports such a difference as a **known gap** instead
 of a failure, and `fakeobd verify` (the simulator replaying itself) counts it as a failure, so a gap
