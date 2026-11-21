@@ -44,4 +44,4 @@ Each row: the code was changed (`tools/break_check.py` holds the exact edit), th
 | M38 | `crates/obd-policy/src/filter.rs` | KILLED | lines_are_forwarded_answered_or_refused |
 | M39 | `crates/fakeobd/src/lib.rs` | KILLED | a_pipe_answers_without_a_socket_one_chunk_per_line |
 | M40 | `crates/fakeobd/src/lib.rs` | KILLED | close_is_idempotent_and_disconnects_the_receiver |
-| M41 | `crates/serial-bridge/src/lib.rs` | KILLED | a_relay_between_two_streams_refuses_what_the_policy_refuses |
+| M41 | `crates/obd-policy/src/filter.rs` | KILLED | lines_are_forwarded_answered_or_refused |
