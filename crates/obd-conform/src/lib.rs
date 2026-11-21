@@ -390,9 +390,9 @@ pub fn compare(expected: &Transcript, actual: &Transcript) -> Report {
         };
         r.results.push((e.request.clone(), v));
     }
-    for a in expected.entries.len()..actual.entries.len() {
+    for extra in &actual.entries[expected.entries.len()..] {
         r.results.push((
-            actual.entries[a].request.clone(),
+            extra.request.clone(),
             Verdict::Fail {
                 want: vec!["(missing)".into()],
                 got: vec!["extra entry".into()],
