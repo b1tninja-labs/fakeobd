@@ -24,6 +24,14 @@ dependencies = [
 [[package]]
 name = "isotp"
 version = "0.1.0"
+dependencies = [
+ "isotpkit",
+]
+
+[[package]]
+name = "isotpkit"
+version = "0.1.0"
+source = "git+https://github.com/b1tninja-labs/isotpkit#72d0156cf9b6186cc57b281c45b1e2cd1158ab29"
 
 [[package]]
 name = "obd-conform"

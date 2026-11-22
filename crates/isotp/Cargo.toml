@@ -5,6 +5,12 @@ edition.workspace = true
 license.workspace = true
 description = "ISO-TP (ISO 15765-2) framing, segmentation and reassembly over classic CAN"
 
+[dependencies]
+# First-party ISO 15765-2:2016 ISO-TP codec, grounded against the standard and sans-I/O. A git
+# dependency (not a path) because fakeobd CI checks out only this repo; isotpkit is publish = false
+# but its repository is readable.
+isotpkit = { git = "https://github.com/b1tninja-labs/isotpkit" }
+
 [lints]
 workspace = true
 
