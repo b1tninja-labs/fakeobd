@@ -8,6 +8,11 @@ members = [
     "crates/obd-conform",
     "crates/fakeobd",
 ]
+# The optional Python bindings live in `py/` (`fakeobd-py`, imported as the module `fakeobd`). They
+# are `std` and allow `unsafe` (pyo3's macros need it), so they are deliberately kept out of this
+# workspace: the five Rust gates run `--workspace` and must build only the core crates with no Python
+# toolchain. `py/` is a standalone crate with path dependencies into the core and its own CI job.
+exclude = ["py"]
 
 [workspace.package]
 version = "0.1.0"

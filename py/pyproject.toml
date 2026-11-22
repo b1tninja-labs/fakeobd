@@ -1,0 +1,22 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "fakeobd"
+version = "0.1.0"
+description = "Python bindings for fakeobd, the ELM327/STN OBD-II/UDS simulator (drive a fake vehicle in-process)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT OR Apache-2.0" }
+keywords = ["obd", "obd-ii", "elm327", "stn", "uds", "iso-tp", "can", "simulator", "gmlan"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing",
+]
+
+[tool.maturin]
+# The Rust cdylib is `fakeobd_py`; the imported Python module is `fakeobd`.
+module-name = "fakeobd"
+# An abi3 wheel (the pyo3 `abi3-py39` feature) works on CPython 3.9 and newer.

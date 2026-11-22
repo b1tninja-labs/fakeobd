@@ -7,3 +7,5 @@ target/
 /captures/
 *.log
 .env
+# The Python bindings crate is excluded from the workspace, so it resolves its own lockfile.
+/py/Cargo.lock
