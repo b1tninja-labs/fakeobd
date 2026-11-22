@@ -1,0 +1,33 @@
+[package]
+name = "fakeobd-py"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+description = "Python bindings for fakeobd, the ELM327/STN OBD-II/UDS simulator."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+publish = false
+
+[lib]
+# The Rust crate name differs from the `fakeobd` dependency to avoid a name clash; the Python module
+# is named `fakeobd` by the `#[pymodule]` function and maturin's `module-name`.
+name = "fakeobd_py"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Path dependencies into the core workspace's crates. This crate is excluded from that workspace
+# (see the root Cargo.toml) so the `--workspace` Rust gates never build it and need no Python.
+fakeobd = { path = "../crates/fakeobd" }
+elm = { path = "../crates/elm" }
+vehicle = { path = "../crates/vehicle" }
+obd-policy = { path = "../crates/obd-policy" }
+obd-conform = { path = "../crates/obd-conform" }
+pyo3 = { version = "0.30.1", features = ["extension-module", "abi3-py39"] }
+
+[lints.rust]
+# pyo3's macros generate `unsafe` impls, so — unlike the core crates, which forbid it — this bindings
+# crate allows `unsafe`. This is exactly why the bindings are a separate, excluded crate.
+unsafe_code = "allow"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

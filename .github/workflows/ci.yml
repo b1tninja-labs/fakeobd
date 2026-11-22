@@ -42,6 +42,29 @@ jobs:
       - name: golden transcripts replay against the simulator
         run: cargo run -p fakeobd -- verify transcripts/bench.txt transcripts/elm-init.txt transcripts/elm-errors.txt transcripts/obd2-read.txt transcripts/policy.txt transcripts/stn.txt transcripts/uds-read.txt
 
+  # The pyo3 bindings are a separate crate excluded from the workspace (they allow `unsafe`, which the
+  # core forbids), so they build and test here, not in the --workspace gates above.
+  python-bindings:
+    name: python bindings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: clippy
+        run: cargo clippy --manifest-path py/Cargo.toml --all-targets -- -D warnings
+      - name: build and test
+        run: |
+          python -m pip install --upgrade pip maturin pytest
+          cd py
+          maturin develop
+          pytest -q
+
   # Every [ok] row: break the code, watch the named test fail. About 35 cargo runs.
   break-check:
     name: break and watch fail
