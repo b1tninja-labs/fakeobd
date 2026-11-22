@@ -34,14 +34,18 @@ MUTATIONS: list[tuple[str, str, str, str, list[str]]] = [
      ["-p", "obd-policy", "--test", "policy", "did_deny_ranges"]),
     ("M07", "crates/obd-policy/src/line.rs", '"ATCAF0", "ATPP", "STPX", "STSLX", "STBTPM"', '"ATCAF0", "ATPP", "STSLX", "STBTPM"',
      ["-p", "obd-policy", "--test", "policy", "line_classifier"]),
-    ("M08", "crates/isotp/src/lib.rs", "if payload.len() <= 7 {", "if payload.len() <= 8 {",
-     ["-p", "isotp", "seven_bytes_is_single"]),
-    ("M09", "crates/isotp/src/lib.rs", "0x20 | ((i + 1) & 0x0F) as u8", "0x20 | ((i + 1) & 0x1F) as u8",
-     ["-p", "isotp", "sequence_number_wraps"]),
-    ("M10", "crates/isotp/src/lib.rs", "if sn != self.next_sn {", "if false && sn != self.next_sn {",
-     ["-p", "isotp", "wrong_sequence_number"]),
-    ("M11", "crates/isotp/src/lib.rs", "0xF1..=0xF9 => u32::from(raw - 0xF0) * 100,", "0xF1..=0xF9 => u32::from(raw - 0xF0) * 1000,",
-     ["-p", "isotp", "st_min_decoding"]),
+    # The grounded ISO-TP codec (SF/FF boundary, SN wrap, STmin table, FC/SN validation) now lives
+    # in the first-party `isotpkit` dependency, which grounds and tests it; these mutations cover the
+    # server-adapter logic `isotp` keeps over it. isotpkit is not a workspace member, so cargo fetches
+    # and builds it for `-p isotp`.
+    ("M08", "crates/isotp/src/lib.rs", "Ok(Rx::NeedFlow { len })", "Ok(Rx::More)",
+     ["-p", "isotp", "a_first_frame_is_accepted_and_owes_a_flow_control"]),
+    ("M09", "crates/isotp/src/lib.rs", "if len > limit {", "if false && len > limit {",
+     ["-p", "isotp", "a_first_frame_over_the_limit_is_an_overflow"]),
+    ("M10", "crates/isotp/src/lib.rs", "if !self.inner.in_progress() {", "if false && !self.inner.in_progress() {",
+     ["-p", "isotp", "a_wrong_sequence_number_resets_the_channel"]),
+    ("M11", "crates/isotp/src/lib.rs", "(SegmentPdu::Consecutive(cf), Some(p)) => cf.encode_with(true, p),", "(SegmentPdu::Consecutive(cf), Some(p)) => cf.encode_with(false, p),",
+     ["-p", "isotp", "padding_fills_frames_to_eight_bytes"]),
     ("M12", "crates/vehicle/src/ecu.rs", "v |= 1 << (32 - off);", "v |= 1 << (31 - off);",
      ["-p", "vehicle", "bitmap_sets_the_msb"]),
     ("M13", "crates/vehicle/src/ecu.rs", "if (functional && !self.spec.functional)", "if (false && functional && !self.spec.functional)",

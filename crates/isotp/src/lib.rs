@@ -1,30 +1,36 @@
-//! `isotp`: ISO-TP framing over classic CAN, 8-byte frames (TX_DL = 8, normal addressing).
+//! `isotp`: the fake vehicle's server-side ISO-TP adapter over the `isotpkit` codec.
 //!
-//! PCI layout, sequence numbers and STmin follow ISO 15765-2:2016 clauses read via `iso_*`:
-//! `iso:15765-2@2016§9.2.1`, `iso:15765-2@2016§9.3`, `iso:15765-2@2016§9.4.2`,
-//! `iso:15765-2@2016§9.4.3`, `iso:15765-2@2016§9.4.4`, `iso:15765-2@2016§9.4.5`,
-//! `iso:15765-2@2016§9.6.1`, `iso:15765-2@2016§9.6.2`, `iso:15765-2@2016§9.6.3`,
-//! `iso:15765-2@2016§9.6.4`, `iso:15765-2@2016§9.6.5`.
-//! Sentences those clauses contain that the simulator does not follow are listed in
-//! `docs/architecture.md`.
+//! The grounded ISO 15765-2:2016 codec — PCI framing, segmentation, the `ConsecutiveFrame`
+//! sequence-number wrap, `STmin` decoding and `FlowControl` encode/decode — lives in the
+//! first-party [`isotpkit`] crate, read clause by clause against the standard and sans-I/O. This
+//! crate is the thin server layer that `isotpkit` deliberately leaves out: the simulated ECU's
+//! receiver that owes the sender a `FlowControl` after a `FirstFrame`, a receive-buffer limit that
+//! answers an over-long message with flow-control overflow, and the [`CanFrame`] type the bus moves
+//! around. It adds no codec logic of its own; it names `isotpkit`'s primitives in the shape the
+//! `elm` and `vehicle` crates consume.
 
-/// One classic CAN data frame with an 11-bit identifier.
+use isotpkit::flowcontrol::SeparationTime;
+use isotpkit::pci::{decode_frame, NPdu, FF_DL_12BIT_MAX};
+use isotpkit::segment::{segment as kit_segment, Reassembler as KitReassembler, SegmentPdu};
+use isotpkit::Error;
+
+pub use isotpkit::flowcontrol::FlowStatus;
+
+/// One classic CAN data frame with an 11-bit identifier. `isotpkit` is sans-I/O and has no frame
+/// type; the simulated bus moves these.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CanFrame {
     pub id: u32,
     pub data: Vec<u8>,
 }
 
-/// Longest message ISO-TP can describe with a 12-bit length.
-pub const MAX_LEN: usize = 4095;
+/// Longest message ISO-TP can describe with a 12-bit length (`isotpkit`'s `FF_DL` 12-bit maximum).
+pub const MAX_LEN: usize = FF_DL_12BIT_MAX;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FlowStatus {
-    ContinueToSend,
-    Wait,
-    Overflow,
-}
-
+/// A `FlowControl` N_PDU in the fields the server uses (`isotpkit` names them `flow_status`/`stmin`).
+///
+/// The on-wire encoding is delegated to [`isotpkit::pci::FlowControl`]; this type only carries the
+/// three parameters in the shape the `elm`/`vehicle` servers expect.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FlowControl {
     pub status: FlowStatus,
@@ -35,23 +41,29 @@ pub struct FlowControl {
 }
 
 impl FlowControl {
+    /// Clear-to-send, block size 0, STmin 0.
     pub const CTS: FlowControl = FlowControl {
         status: FlowStatus::ContinueToSend,
         block_size: 0,
         st_min: 0,
     };
-    /// FC N_PDU: PCI type 3, flow status in the low nibble, then block size and STmin.
-    /// `iso:15765-2@2016§9.6.1`, `iso:15765-2@2016§9.6.5`.
+
+    /// The three on-wire N_PCI bytes (`0x3<FS>`, `BS`, `STmin`), unpadded. The caller pads to 8.
     pub fn encode(self) -> Vec<u8> {
-        let fs = match self.status {
-            FlowStatus::ContinueToSend => 0,
-            FlowStatus::Wait => 1,
-            FlowStatus::Overflow => 2,
-        };
-        vec![0x30 | fs, self.block_size, self.st_min]
+        isotpkit::pci::FlowControl::new(self.status, self.block_size, self.st_min)
+            .encode_with(false, 0)
     }
 }
 
+fn from_kit_fc(fc: isotpkit::pci::FlowControl) -> FlowControl {
+    FlowControl {
+        status: fc.flow_status,
+        block_size: fc.block_size,
+        st_min: fc.stmin,
+    }
+}
+
+/// One decoded N_PDU, in the shape the server matches on.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Pdu {
     Single(Vec<u8>),
@@ -60,75 +72,29 @@ pub enum Pdu {
     Flow(FlowControl),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum DecodeError {
-    Empty,
-    /// PCI type nibble not in 0..=3.
-    UnknownPci(u8),
-    /// Single frame whose length field is 0 or exceeds the frame.
-    BadSingleLength(usize),
-    /// First frame shorter than 8 bytes or with a length that fits a single frame.
-    BadFirstFrame,
-    /// Flow control shorter than 3 bytes or with a reserved status.
-    BadFlowControl,
+/// Decode one frame's data field into its N_PDU, delegating the framing to `isotpkit`.
+///
+/// # Errors
+/// Any [`isotpkit::Error`] its per-type decoder returns.
+pub fn decode(data: &[u8]) -> Result<Pdu, Error> {
+    Ok(match decode_frame(data)? {
+        NPdu::Single(sf) => Pdu::Single(sf.data().to_vec()),
+        NPdu::First(ff) => Pdu::First {
+            len: ff.length(),
+            data: ff.data().to_vec(),
+        },
+        NPdu::Consecutive(cf) => Pdu::Consecutive {
+            sn: cf.sn(),
+            data: cf.data().to_vec(),
+        },
+        NPdu::Flow(fc) => Pdu::Flow(from_kit_fc(fc)),
+    })
 }
 
-/// Decode the PCI of one frame's data field.
-pub fn decode(data: &[u8]) -> Result<Pdu, DecodeError> {
-    let b0 = *data.first().ok_or(DecodeError::Empty)?;
-    match b0 >> 4 {
-        0 => {
-            let len = usize::from(b0 & 0x0F);
-            if len == 0 || len > data.len() - 1 || len > 7 {
-                return Err(DecodeError::BadSingleLength(len));
-            }
-            Ok(Pdu::Single(data[1..1 + len].to_vec()))
-        }
-        1 => {
-            if data.len() < 8 {
-                return Err(DecodeError::BadFirstFrame);
-            }
-            let len = (usize::from(b0 & 0x0F) << 8) | usize::from(data[1]);
-            if len < 8 {
-                return Err(DecodeError::BadFirstFrame);
-            }
-            Ok(Pdu::First {
-                len,
-                data: data[2..8].to_vec(),
-            })
-        }
-        2 => Ok(Pdu::Consecutive {
-            sn: b0 & 0x0F,
-            data: data[1..].to_vec(),
-        }),
-        3 => {
-            if data.len() < 3 {
-                return Err(DecodeError::BadFlowControl);
-            }
-            let status = match b0 & 0x0F {
-                0 => FlowStatus::ContinueToSend,
-                1 => FlowStatus::Wait,
-                2 => FlowStatus::Overflow,
-                _ => return Err(DecodeError::BadFlowControl),
-            };
-            Ok(Pdu::Flow(FlowControl {
-                status,
-                block_size: data[1],
-                st_min: data[2],
-            }))
-        }
-        n => Err(DecodeError::UnknownPci(n)),
-    }
-}
-
-/// STmin in microseconds. `iso:15765-2@2016§9.6.5`: 0x00..=0x7F are milliseconds, 0xF1..=0xF9 are
-/// 100..=900 microseconds, and a reserved value is 127 ms.
+/// STmin in microseconds, via [`isotpkit::flowcontrol::SeparationTime`]: 0x00..=0x7F are
+/// milliseconds, 0xF1..=0xF9 are 100..=900 microseconds, and a reserved value is 127 ms.
 pub fn st_min_us(raw: u8) -> u32 {
-    match raw {
-        0x00..=0x7F => u32::from(raw) * 1000,
-        0xF1..=0xF9 => u32::from(raw - 0xF0) * 100,
-        _ => 127_000,
-    }
+    SeparationTime::from_byte(raw).microseconds()
 }
 
 /// A message cut into frames.
@@ -145,59 +111,45 @@ pub enum SegmentError {
     TooLong(usize),
 }
 
-/// Cut `payload` into frames. `pad` fills every frame to 8 bytes when set.
+fn encode_segment(pdu: &SegmentPdu, pad: Option<u8>) -> Vec<u8> {
+    match (pdu, pad) {
+        // A FirstFrame always fills all 8 bytes, so padding is a no-op.
+        (SegmentPdu::First(ff), _) => ff.encode(),
+        (SegmentPdu::Single(sf), Some(p)) => sf.encode_with(true, p),
+        (SegmentPdu::Single(sf), None) => sf.encode_with(false, 0),
+        (SegmentPdu::Consecutive(cf), Some(p)) => cf.encode_with(true, p),
+        (SegmentPdu::Consecutive(cf), None) => cf.encode_with(false, 0),
+    }
+}
+
+/// Cut `payload` into frames. `pad` fills every frame to 8 bytes when set. The segmentation
+/// (single vs first-plus-consecutive, the sequence-number wrap) is `isotpkit`'s.
+///
+/// # Errors
+/// [`SegmentError::Empty`] for an empty payload, [`SegmentError::TooLong`] above [`MAX_LEN`].
 pub fn segment(payload: &[u8], pad: Option<u8>) -> Result<Segments, SegmentError> {
-    if payload.is_empty() {
-        return Err(SegmentError::Empty);
-    }
-    if payload.len() > MAX_LEN {
-        return Err(SegmentError::TooLong(payload.len()));
-    }
-    let padded = |mut v: Vec<u8>| {
-        if let Some(p) = pad {
-            v.resize(8, p);
-        }
-        v
-    };
-    // TX_DL = 8, normal addressing: up to 7 data bytes in one SF. `iso:15765-2@2016§9.2.1`.
-    if payload.len() <= 7 {
-        let mut f = vec![payload.len() as u8];
-        f.extend_from_slice(payload);
-        return Ok(Segments {
-            first: padded(f),
-            rest: Vec::new(),
-        });
-    }
-    let mut first = vec![
-        0x10 | (payload.len() >> 8) as u8,
-        (payload.len() & 0xFF) as u8,
-    ];
-    first.extend_from_slice(&payload[..6]);
-    let rest = payload[6..]
-        .chunks(7)
-        .enumerate()
-        .map(|(i, c)| {
-            // First CF is SN 1. After 15 the next CF is 0. `iso:15765-2@2016§9.6.4`.
-            let mut f = vec![0x20 | ((i + 1) & 0x0F) as u8];
-            f.extend_from_slice(c);
-            padded(f)
-        })
-        .collect();
+    let pdus = kit_segment(payload).map_err(|e| match e {
+        Error::EmptyMessage => SegmentError::Empty,
+        Error::MessageTooLong(n) => SegmentError::TooLong(n),
+        // `segment` only reports the two above; keep the length for any future variant.
+        _ => SegmentError::TooLong(payload.len()),
+    })?;
+    let mut frames = pdus.iter().map(|p| encode_segment(p, pad));
+    let first = frames.next().expect("segment yields at least one PDU");
+    let rest = frames.collect();
     Ok(Segments { first, rest })
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RxError {
     /// A consecutive frame arrived with the wrong sequence number.
-    BadSequence {
-        expected: u8,
-        got: u8,
-    },
+    BadSequence { expected: u8, got: u8 },
     /// A consecutive frame arrived with no first frame before it.
     Unexpected,
     /// The announced length exceeds the receiver's limit; answer with flow-control overflow.
     Overflow(usize),
-    Decode(DecodeError),
+    /// The frame did not decode as a valid N_PDU.
+    Decode(Error),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -212,79 +164,77 @@ pub enum Rx {
     Flow(FlowControl),
 }
 
-/// Receiver side of one ISO-TP channel.
+/// Receiver side of one ISO-TP channel. The buffer, sequence-number validation and
+/// completion are `isotpkit`'s [`Reassembler`](isotpkit::segment::Reassembler); this wrapper adds
+/// the server's flow-control-owed signal and the receive-buffer limit.
 #[derive(Clone, Debug, Default)]
 pub struct Reassembler {
-    buf: Vec<u8>,
-    expected: usize,
-    next_sn: u8,
-    active: bool,
+    inner: KitReassembler,
 }
 
 impl Reassembler {
     pub fn new() -> Reassembler {
-        Reassembler::default()
+        Reassembler {
+            inner: KitReassembler::new(),
+        }
     }
 
     pub fn reset(&mut self) {
-        *self = Reassembler::default();
+        self.inner.reset();
     }
 
     pub fn in_progress(&self) -> bool {
-        self.active
+        self.inner.in_progress()
     }
 
-    /// Feed one frame's data field. A receive error resets the channel. `limit` is the longest message
-    /// this receiver will take.
+    /// Feed one frame's data field. A receive error resets the channel. `limit` is the longest
+    /// message this receiver will take.
+    ///
+    /// # Errors
+    /// [`RxError::Decode`] for a malformed frame, [`RxError::Overflow`] for a first frame whose
+    /// length exceeds `limit`, [`RxError::Unexpected`] for a consecutive frame with no first frame
+    /// before it, and [`RxError::BadSequence`] for a consecutive frame out of order.
     pub fn push(&mut self, data: &[u8], limit: usize) -> Result<Rx, RxError> {
-        let pdu = match decode(data) {
+        let npdu = match decode_frame(data) {
             Ok(p) => p,
             Err(e) => {
-                self.reset();
+                self.inner.reset();
                 return Err(RxError::Decode(e));
             }
         };
-        match pdu {
-            Pdu::Single(p) => {
-                self.reset();
-                Ok(Rx::Complete(p))
+        match npdu {
+            NPdu::Single(sf) => {
+                self.inner.reset();
+                Ok(Rx::Complete(sf.data().to_vec()))
             }
-            Pdu::First { len, data } => {
-                self.reset();
+            NPdu::First(ff) => {
+                self.inner.reset();
+                let len = ff.length();
                 if len > limit {
                     return Err(RxError::Overflow(len));
                 }
-                self.buf = data;
-                self.expected = len;
-                self.next_sn = 1;
-                self.active = true;
+                // A FirstFrame on a just-reset reassembler opens the session and cannot fail.
+                let _ = self.inner.feed(&SegmentPdu::First(ff));
                 Ok(Rx::NeedFlow { len })
             }
-            Pdu::Consecutive { sn, data } => {
-                if !self.active {
+            NPdu::Consecutive(cf) => {
+                if !self.inner.in_progress() {
                     return Err(RxError::Unexpected);
                 }
-                // An unexpected sequence number aborts the reception. `iso:15765-2@2016§9.6.4`.
-                if sn != self.next_sn {
-                    let e = RxError::BadSequence {
-                        expected: self.next_sn,
-                        got: sn,
-                    };
-                    self.reset();
-                    return Err(e);
-                }
-                self.next_sn = (self.next_sn + 1) & 0x0F;
-                let want = self.expected - self.buf.len();
-                self.buf.extend_from_slice(&data[..data.len().min(want)]);
-                if self.buf.len() == self.expected {
-                    let out = std::mem::take(&mut self.buf);
-                    self.reset();
-                    Ok(Rx::Complete(out))
-                } else {
-                    Ok(Rx::More)
+                match self.inner.feed(&SegmentPdu::Consecutive(cf)) {
+                    Ok(Some(message)) => Ok(Rx::Complete(message)),
+                    Ok(None) => Ok(Rx::More),
+                    // `feed` resets itself on a wrong sequence number (N_WRONG_SN).
+                    Err(Error::WrongSequenceNumber { expected, got }) => {
+                        Err(RxError::BadSequence { expected, got })
+                    }
+                    Err(e) => {
+                        self.inner.reset();
+                        Err(RxError::Decode(e))
+                    }
                 }
             }
-            Pdu::Flow(fc) => Ok(Rx::Flow(fc)),
+            NPdu::Flow(fc) => Ok(Rx::Flow(from_kit_fc(fc))),
         }
     }
 }
@@ -343,6 +293,23 @@ mod tests {
     }
 
     #[test]
+    fn padding_fills_frames_to_eight_bytes() {
+        let s = segment(&[1; 3], Some(0xAA)).unwrap();
+        assert_eq!(s.first, [0x03, 1, 1, 1, 0xAA, 0xAA, 0xAA, 0xAA]);
+        let s = segment(&[2; 8], Some(0xAA)).unwrap();
+        assert_eq!(s.rest[0], [0x21, 2, 2, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA]);
+    }
+
+    #[test]
+    fn a_first_frame_is_accepted_and_owes_a_flow_control() {
+        let s = segment(&[7; 30], None).unwrap();
+        assert_eq!(
+            Reassembler::new().push(&s.first, MAX_LEN),
+            Ok(Rx::NeedFlow { len: 30 })
+        );
+    }
+
+    #[test]
     fn a_wrong_sequence_number_resets_the_channel() {
         let s = segment(&[7; 30], None).unwrap();
         let mut r = Reassembler::new();
@@ -386,24 +353,18 @@ mod tests {
         };
         assert_eq!(fc.encode(), [0x31, 8, 0x14]);
         assert_eq!(decode(&fc.encode()), Ok(Pdu::Flow(fc)));
-        assert_eq!(decode(&[0x33, 0, 0]), Err(DecodeError::BadFlowControl));
-        assert_eq!(decode(&[0x30, 0]), Err(DecodeError::BadFlowControl));
+        assert!(decode(&[0x33, 0, 0]).is_err());
+        assert!(decode(&[0x30, 0]).is_err());
     }
 
     #[test]
     fn malformed_frames_are_refused() {
-        assert_eq!(decode(&[]), Err(DecodeError::Empty));
-        assert_eq!(decode(&[0x00, 1]), Err(DecodeError::BadSingleLength(0)));
-        assert_eq!(decode(&[0x05, 1, 2]), Err(DecodeError::BadSingleLength(5)));
-        assert_eq!(
-            decode(&[0x08, 1, 2, 3, 4, 5, 6, 7, 8]),
-            Err(DecodeError::BadSingleLength(8))
-        );
-        assert_eq!(
-            decode(&[0x10, 0x05, 1, 2, 3, 4, 5, 6]),
-            Err(DecodeError::BadFirstFrame)
-        );
-        assert_eq!(decode(&[0x40]), Err(DecodeError::UnknownPci(4)));
+        assert!(decode(&[]).is_err());
+        assert!(decode(&[0x00, 1]).is_err());
+        assert!(decode(&[0x05, 1, 2]).is_err());
+        assert!(decode(&[0x08, 1, 2, 3, 4, 5, 6, 7, 8]).is_err());
+        assert!(decode(&[0x10, 0x05, 1, 2, 3, 4, 5, 6]).is_err());
+        assert!(decode(&[0x40]).is_err());
     }
 
     #[test]
